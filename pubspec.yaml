@@ -1,0 +1,34 @@
+name: righttouch
+description: "RightTouch - Home Services Customer Application (Production)."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.6.1
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+  cached_network_image: ^3.4.1
+  intl: ^0.19.0
+  pinput: ^5.0.0
+  geolocator: ^13.0.1
+  shimmer: ^3.0.0
+  timeago: ^3.7.0
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/

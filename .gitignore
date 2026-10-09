@@ -1,0 +1,62 @@
+# Flutter and Dart
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# Dependencies
+pubspec.lock
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+android/**/key.properties
+android/captures/
+android/.cxx/
+android/**/GeneratedPluginRegistrant.java
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Runner/GeneratedPluginRegistrant.*
+ios/Flutter/ephemeral/
+ios/Runner.xcworkspace/
+
+# macOS
+macos/Pods/
+
+# Linux and Windows generated files
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# Logs and temporary files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Certificates and signing keys
+*.jks
+*.keystore
+*.p12
+*.pem
+
+# Test and coverage output
+coverage/
