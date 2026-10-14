@@ -1,20 +1,20 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// RightTouch official brand palette matching UI design
 class AppColors {
-  // Primary emerald scale
-  static const Color primary = Color(0xFF059669);
-  static const Color primaryDark = Color(0xFF047857);
-  static const Color primaryLight = Color(0xFF10B981);
-  static const Color primarySoft = Color(0xFFECFDF5);
+  // Primary vibrant brand green scale (sampled #16A34A / #17A34A)
+  static const Color primary = Color(0xFF16A34A);
+  static const Color primaryDark = Color(0xFF15803D);
+  static const Color primaryLight = Color(0xFF22C55E);
+  static const Color primarySoft = Color(0xFFF0FDF4);
   static const Color primaryBg = Color(0xFFF0FDF4);
-  static const Color primaryBorder = Color(0xFFA7F3D0);
+  static const Color primaryBorder = Color(0xFFBBF7D0);
 
   // Hero dark navy / forest green
   static const Color heroBgStart = Color(0xFF06181B);
   static const Color heroBgEnd = Color(0xFF0C2B27);
   static const Color heroNavy = Color(0xFF0A1E24);
-  static const Color heroAccent = Color(0xFF10B981);
+  static const Color heroAccent = Color(0xFF22C55E);
 
   // Promo mint
   static const Color promoBgStart = Color(0xFFD1FAE5);
@@ -32,13 +32,13 @@ class AppColors {
   static const Color grey200 = Color(0xFFE2E8F0);
   static const Color grey100 = Color(0xFFF1F5F9);
   static const Color grey50 = Color(0xFFF8FAFC);
-  static const Color background = Color(0xFFF8FAFC);
+  static const Color background = Colors.white;
   static const Color card = Colors.white;
 
   // Semantics
   static const Color danger = Color(0xFFEF4444);
   static const Color warning = Color(0xFFF59E0B);
   static const Color info = Color(0xFF3B82F6);
-  static const Color success = Color(0xFF059669);
+  static const Color success = Color(0xFF16A34A);
   static const Color star = Color(0xFFFBBF24);
 }

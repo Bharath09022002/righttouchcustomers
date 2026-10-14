@@ -30,7 +30,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Quotations & Custom Orders',
@@ -38,9 +38,9 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF059669),
+          labelColor: const Color(0xFF16A34A),
           unselectedLabelColor: const Color(0xFF64748B),
-          indicatorColor: const Color(0xFF059669),
+          indicatorColor: const Color(0xFF16A34A),
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
           tabs: const [
@@ -64,7 +64,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
   Widget _buildQuotationsTab() {
     final q = ref.watch(quotationListProvider);
     return RefreshIndicator(
-      color: const Color(0xFF059669),
+      color: const Color(0xFF16A34A),
       onRefresh: () async => ref.invalidate(quotationListProvider),
       child: q.when(
         data: (list) {
@@ -103,7 +103,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                             color: const Color(0xFFECFDF5),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.description_outlined, color: Color(0xFF059669), size: 20),
+                          child: const Icon(Icons.description_outlined, color: Color(0xFF16A34A), size: 20),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -132,7 +132,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                     const SizedBox(height: 12),
                     Text(
                       inr(x.amount),
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF059669)),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF16A34A)),
                     ),
                     if (isPending) ...[
                       const SizedBox(height: 14),
@@ -164,7 +164,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF059669),
+                                backgroundColor: const Color(0xFF16A34A),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
@@ -213,7 +213,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF059669))),
+        loading: () => const Center(child: RtLoader()),
         error: (e, _) => ErrorView(message: '$e', onRetry: () => ref.invalidate(quotationListProvider)),
       ),
     );
@@ -222,7 +222,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
   Widget _buildRequestsTab() {
     final reqs = ref.watch(quoteRequestListProvider);
     return RefreshIndicator(
-      color: const Color(0xFF059669),
+      color: const Color(0xFF16A34A),
       onRefresh: () async => ref.invalidate(quoteRequestListProvider),
       child: reqs.when(
         data: (list) {
@@ -317,7 +317,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF059669))),
+        loading: () => const Center(child: RtLoader()),
         error: (e, _) => ErrorView(message: '$e', onRetry: () => ref.invalidate(quoteRequestListProvider)),
       ),
     );
@@ -326,7 +326,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
   Widget _buildProductBookingsTab() {
     final pb = ref.watch(productBookingsProvider);
     return RefreshIndicator(
-      color: const Color(0xFF059669),
+      color: const Color(0xFF16A34A),
       onRefresh: () async => ref.invalidate(productBookingsProvider),
       child: pb.when(
         data: (list) {
@@ -358,7 +358,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.check_circle, color: Color(0xFF059669), size: 20),
+                        const Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -368,7 +368,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                         ),
                         Text(
                           b.status.toUpperCase(),
-                          style: const TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.w900, fontSize: 11),
+                          style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w900, fontSize: 11),
                         ),
                       ],
                     ),
@@ -384,7 +384,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF059669))),
+        loading: () => const Center(child: RtLoader()),
         error: (e, _) => ErrorView(message: '$e', onRetry: () => ref.invalidate(productBookingsProvider)),
       ),
     );

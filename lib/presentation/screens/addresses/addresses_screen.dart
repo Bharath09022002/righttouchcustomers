@@ -11,7 +11,8 @@ class AddressesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final a = ref.watch(addressListProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('My addresses')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(title: const Text('My addresses'), backgroundColor: Colors.white, elevation: 0),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/add-address'),
         label: const Text('Add address'),
@@ -54,6 +55,14 @@ class AddressesScreen extends ConsumerWidget {
                           }
                         }
                       } else {
+                        if (x.isDefault) {
+                          showError(
+                            context,
+                            title: 'Default Address',
+                            message: 'This is currently your default address. Please set another address as default first before deleting.',
+                          );
+                          return;
+                        }
                         try {
                           await ref.read(addressRepoProvider).remove(x.id);
                           ref.invalidate(addressListProvider);
@@ -62,8 +71,11 @@ class AddressesScreen extends ConsumerWidget {
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            final appErr = mapException(e);
-                            showError(context, title: 'Action Failed', message: appErr.userMessage);
+                            final raw = e.toString().replaceAll('ApiException:', '').trim();
+                            final msg = raw.isNotEmpty && !raw.contains('Instance of')
+                                ? raw
+                                : mapException(e).userMessage;
+                            showError(context, title: 'Action Failed', message: msg);
                           }
                         }
                       }
@@ -78,7 +90,7 @@ class AddressesScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: RtLoader()),
         error: (e, _) => ErrorView(message: '$e', onRetry: () => ref.invalidate(addressListProvider)),
       ),
     );

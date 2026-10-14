@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../providers/providers.dart';
 import '../../widgets/right_touch_header.dart';
+import '../../../core/widgets/app_image.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -20,16 +21,25 @@ class ProfileScreen extends ConsumerWidget {
           orElse: () => 0,
         );
 
-    final userName = (u?.fullName.isNotEmpty == true)
-        ? u!.fullName
-        : ((u?.fname.isNotEmpty == true) ? '${u!.fname} ${u.lname}'.trim() : 'Vignesh S');
-    final userEmail = (u?.email.isNotEmpty == true) ? u!.email : 'vigneshs@gmail.com';
-    final userPhone = (u?.mobile.isNotEmpty == true) ? u!.mobile : '+91 98765 43210';
-    final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'V';
+    final isGuest = auth.isGuest && (u == null || u.id == 'guest_user' || u.id == 'guest');
+    final userName = isGuest
+        ? 'Guest Explorer'
+        : ((u?.fullName.isNotEmpty == true)
+            ? u!.fullName
+            : ((u?.fname.isNotEmpty == true) ? '${u!.fname} ${u.lname}'.trim() : 'Customer'));
+    final userEmail = isGuest
+        ? 'guest.explorer@righttouch.com'
+        : ((u?.email.isNotEmpty == true) ? u!.email : (u != null ? 'No email registered' : ''));
+    final userPhone = isGuest
+        ? '+91 98941 69716'
+        : ((u?.mobile.isNotEmpty == true)
+            ? u!.mobile
+            : ((auth.mobile?.isNotEmpty == true) ? auth.mobile! : 'Not available'));
+    final initial = isGuest ? 'G' : (userName.isNotEmpty ? userName[0].toUpperCase() : 'C');
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-      appBar: const RightTouchTopAppBar(showSearch: false),
+      backgroundColor: Colors.white,
+      appBar: const RightTouchTopAppBar(title: 'Profile'),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 40),
         children: [
@@ -37,6 +47,7 @@ class ProfileScreen extends ConsumerWidget {
           _buildUserProfileCard(
             context,
             isDark: isDark,
+            isGuest: isGuest,
             userName: userName,
             userEmail: userEmail,
             userPhone: userPhone,
@@ -80,6 +91,13 @@ class ProfileScreen extends ConsumerWidget {
                 title: 'Notifications',
                 subtitle: 'Updates on technician arrival, offers & more',
                 onTap: () => context.push('/notifications'),
+              ),
+              _buildListTile(
+                context,
+                icon: Icons.request_quote_outlined,
+                title: 'Product Quotations & Orders',
+                subtitle: 'Custom equipment quotes, status & orders',
+                onTap: () => context.push('/quotations'),
               ),
             ],
           ),
@@ -148,6 +166,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildUserProfileCard(
     BuildContext context, {
     required bool isDark,
+    bool isGuest = false,
     required String userName,
     required String userEmail,
     required String userPhone,
@@ -173,7 +192,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? const Color(0xFF047857) : const Color(0xFFB9F0D6),
+          color: isDark ? const Color(0xFF15803D) : const Color(0xFFB9F0D6),
           width: 1.2,
         ),
         boxShadow: const [
@@ -203,7 +222,7 @@ class ProfileScreen extends ConsumerWidget {
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF059669), Color(0xFF047857)],
+                        colors: [Color(0xFF16A34A), Color(0xFF15803D)],
                       ),
                       boxShadow: const [
                         BoxShadow(
@@ -231,7 +250,7 @@ class ProfileScreen extends ConsumerWidget {
                       width: 22,
                       height: 22,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF059669),
+                        color: const Color(0xFF16A34A),
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
@@ -287,18 +306,26 @@ class ProfileScreen extends ConsumerWidget {
 
               const SizedBox(width: 8),
 
-              // Edit Profile Button
+              // Edit Profile / Sign In Button
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: InkWell(
-                  onTap: () => context.push('/edit-profile'),
+                  onTap: () {
+                    if (isGuest) {
+                      context.push('/login');
+                    } else {
+                      context.push('/edit-profile');
+                    }
+                  },
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isGuest ? const Color(0xFF16A34A) : Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(
+                        color: isGuest ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+                      ),
                       boxShadow: const [
                         BoxShadow(
                           color: Color(0x06000000),
@@ -309,15 +336,19 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.edit, size: 12, color: Color(0xFF0F172A)),
-                        SizedBox(width: 4),
+                      children: [
+                        Icon(
+                          isGuest ? Icons.login_rounded : Icons.edit,
+                          size: 12,
+                          color: isGuest ? Colors.white : const Color(0xFF0F172A),
+                        ),
+                        const SizedBox(width: 4),
                         Text(
-                          'Edit Profile',
+                          isGuest ? 'Sign In' : 'Edit Profile',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
+                            color: isGuest ? Colors.white : const Color(0xFF0F172A),
                           ),
                         ),
                       ],
@@ -328,116 +359,6 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 12),
-
-          // Bottom Row: Member Pill + Green Points Card
-          Row(
-            children: [
-              // RightTouch Member Pill
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xEBFFFFFF),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFD1FAE5)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text('👑', style: TextStyle(fontSize: 13)),
-                        SizedBox(width: 5),
-                        Text(
-                          'RightTouch Member',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF059669),
-                          ),
-                        ),
-                        SizedBox(width: 3),
-                        Icon(Icons.chevron_right, size: 14, color: Color(0xFF059669)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              // Green Points Card
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: InkWell(
-                  onTap: () {
-                    showSuccess(
-                      context,
-                      title: 'Green Points',
-                      message: 'You have 250 Green Points! Redeem on your next service or product order.',
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF065F46),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x22065F46),
-                          blurRadius: 6,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF59E0B),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.eco_rounded, color: Colors.white, size: 14),
-                        ),
-                        const SizedBox(width: 7),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Text(
-                              'Green Points',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: Color(0xFFA7F3D0),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              '250',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.chevron_right, color: Colors.white70, size: 14),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -477,11 +398,13 @@ class ProfileScreen extends ConsumerWidget {
                 width: 64,
                 height: 64,
                 color: const Color(0xFFE8FAF2),
-                child: Image.asset(
-                  'assets/images/cart_3d.jpg',
+                child: const AppImage(
+                  url: 'assets/images/cart_3d.jpg',
+                  width: 64,
+                  height: 64,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Icon(Icons.shopping_cart_rounded, color: Color(0xFF059669), size: 30),
+                  errorWidget: Center(
+                    child: Icon(Icons.shopping_cart_rounded, color: Color(0xFF16A34A), size: 30),
                   ),
                 ),
               ),
@@ -520,23 +443,31 @@ class ProfileScreen extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8FAF2),
+                        color: cartCount > 0
+                            ? const Color(0xFFE8FAF2)
+                            : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.shopping_cart_outlined,
                             size: 11,
-                            color: Color(0xFF059669),
+                            color: cartCount > 0
+                                ? const Color(0xFF16A34A)
+                                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            cartCount > 0 ? '$cartCount items in cart' : '2 items in cart',
-                            style: const TextStyle(
+                            cartCount > 0
+                                ? '$cartCount item${cartCount > 1 ? "s" : ""} in cart'
+                                : 'Cart is empty',
+                            style: TextStyle(
                               fontSize: 10,
-                              color: Color(0xFF059669),
+                              color: cartCount > 0
+                                  ? const Color(0xFF16A34A)
+                                  : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -619,11 +550,11 @@ class ProfileScreen extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF059669),
+                    color: Color(0xFF16A34A),
                   ),
                 ),
                 SizedBox(width: 2),
-                Icon(Icons.chevron_right, color: Color(0xFF059669), size: 15),
+                Icon(Icons.chevron_right, color: Color(0xFF16A34A), size: 15),
               ],
             ),
           ),
@@ -695,7 +626,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
               child: Icon(
                 icon,
-                color: const Color(0xFF059669),
+                color: const Color(0xFF16A34A),
                 size: 19,
               ),
             ),
@@ -761,7 +692,7 @@ class ProfileScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF064E3B), Color(0xFF065F46), Color(0xFF047857)],
+            colors: [Color(0xFF064E3B), Color(0xFF065F46), Color(0xFF15803D)],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
@@ -1002,7 +933,7 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             Row(
               children: const [
-                Icon(Icons.verified_user_outlined, color: Color(0xFF059669), size: 24),
+                Icon(Icons.verified_user_outlined, color: Color(0xFF16A34A), size: 24),
                 SizedBox(width: 8),
                 Text(
                   'RightTouch Guarantee',
@@ -1021,7 +952,7 @@ class ProfileScreen extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF059669),
+                  backgroundColor: const Color(0xFF16A34A),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),

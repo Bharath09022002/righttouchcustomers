@@ -21,7 +21,7 @@ import '../../presentation/screens/cart/cart_screen.dart';
 import '../../presentation/screens/payments/payments_screen.dart';
 import '../../presentation/screens/addresses/addresses_screen.dart';
 import '../../presentation/screens/addresses/add_address_screen.dart';
-import '../../presentation/screens/quotations/quotations_screen.dart';
+import '../../presentation/screens/products/product_quotations_screen.dart';
 import '../../presentation/screens/support/notifications_screen.dart';
 import '../../presentation/screens/support/reports_screen.dart';
 import '../../presentation/screens/profile/edit_profile_screen.dart';
@@ -32,13 +32,14 @@ class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
   RouterNotifier(this._ref) {
     _ref.listen<bool>(
-      authProvider.select((s) => s.loggedIn),
+      authProvider.select((s) => s.loggedIn || s.isGuest),
       (_, __) => notifyListeners(),
     );
   }
 
   String? redirect(BuildContext context, GoRouterState state) {
-    final loggedIn = _ref.read(authProvider).loggedIn;
+    final auth = _ref.read(authProvider);
+    final canBrowse = auth.loggedIn || auth.isGuest;
     final loc = state.matchedLocation;
     // Public auth flow — phone OTP only, no password screens.
     if (loc == '/splash' ||
@@ -48,7 +49,7 @@ class RouterNotifier extends ChangeNotifier {
         loc == '/otp') {
       return null;
     }
-    if (!loggedIn) return '/login';
+    if (!canBrowse) return '/login';
     return null;
   }
 }
@@ -71,14 +72,40 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (_, __, child) => MainShell(child: child),
         routes: [
-          GoRoute(path: '/', builder: (_, __) => const HomeTabPlaceholder()),
-          GoRoute(path: '/products', builder: (_, s) => ProductsScreen(initialCategory: s.uri.queryParameters['category'])),
-          GoRoute(path: '/services', builder: (_, s) => ServicesScreen(initialCategory: s.uri.queryParameters['category'])),
-          GoRoute(path: '/profile', builder: (_, __) => const ProfileTabPlaceholder()),
-          GoRoute(path: '/account', builder: (_, __) => const ProfileTabPlaceholder()),
+          GoRoute(
+            path: '/',
+            pageBuilder: (_, __) => const NoTransitionPage(child: HomeTabPlaceholder()),
+          ),
+          GoRoute(
+            path: '/services',
+            pageBuilder: (_, s) => NoTransitionPage(
+              child: ServicesScreen(initialCategory: s.uri.queryParameters['category']),
+            ),
+          ),
+          GoRoute(
+            path: '/product',
+            pageBuilder: (_, __) => const NoTransitionPage(child: ProductTabPlaceholder()),
+          ),
+          GoRoute(
+            path: '/products',
+            pageBuilder: (_, s) => NoTransitionPage(
+              child: ProductsScreen(initialCategory: s.uri.queryParameters['category']),
+            ),
+          ),
+          GoRoute(
+            path: '/bookings',
+            pageBuilder: (_, __) => const NoTransitionPage(child: BookingsScreen()),
+          ),
+          GoRoute(
+            path: '/profile',
+            pageBuilder: (_, __) => const NoTransitionPage(child: ProfileTabPlaceholder()),
+          ),
+          GoRoute(
+            path: '/account',
+            pageBuilder: (_, __) => const NoTransitionPage(child: ProfileTabPlaceholder()),
+          ),
         ],
       ),
-      GoRoute(path: '/bookings', builder: (_, __) => const BookingsScreen()),
       GoRoute(path: '/cart-tab', builder: (_, __) => const CartScreen()),
       GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
       GoRoute(path: '/category/:id', builder: (_, s) => CategoryScreen(id: s.pathParameters['id']!, name: s.uri.queryParameters['name'] ?? 'Category')),
@@ -91,7 +118,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
       GoRoute(path: '/addresses', builder: (_, __) => const AddressesScreen()),
       GoRoute(path: '/add-address', builder: (_, __) => const AddAddressScreen()),
-      GoRoute(path: '/quotations', builder: (_, __) => const QuotationsScreen()),
+      GoRoute(path: '/quotations', builder: (_, __) => const ProductQuotationsScreen()),
+      GoRoute(path: '/product-quotes', builder: (_, __) => const ProductQuotationsScreen()),
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
       GoRoute(path: '/edit-profile', builder: (_, __) => const EditProfileScreen()),

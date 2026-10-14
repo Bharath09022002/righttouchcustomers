@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_result.dart';
 import '../../core/storage/token_storage.dart';
+import '../../core/storage/local_cache.dart';
 import '../../data/datasources/remote_gateway.dart';
 import '../../data/models/models.dart';
 import '../../data/repositories/repositories.dart';
@@ -24,15 +25,33 @@ enum AuthMode { login, signup }
 class AuthState {
   final bool loading;
   final bool loggedIn;
+  final bool isGuest;
   final UserModel? user;
   final String? mobile;
   final AuthMode mode;
   final String? otpHint;
-  AuthState({this.loading = false, this.loggedIn = false, this.user, this.mobile, this.mode = AuthMode.login, this.otpHint});
-  AuthState copyWith({bool? loading, bool? loggedIn, UserModel? user, String? mobile, AuthMode? mode, String? otpHint}) =>
+  AuthState({
+    this.loading = false,
+    this.loggedIn = false,
+    this.isGuest = false,
+    this.user,
+    this.mobile,
+    this.mode = AuthMode.login,
+    this.otpHint,
+  });
+  AuthState copyWith({
+    bool? loading,
+    bool? loggedIn,
+    bool? isGuest,
+    UserModel? user,
+    String? mobile,
+    AuthMode? mode,
+    String? otpHint,
+  }) =>
       AuthState(
         loading: loading ?? this.loading,
         loggedIn: loggedIn ?? this.loggedIn,
+        isGuest: isGuest ?? this.isGuest,
         user: user ?? this.user,
         mobile: mobile ?? this.mobile,
         mode: mode ?? this.mode,
@@ -48,6 +67,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void setMode(AuthMode m) => state = state.copyWith(mode: m);
   void setMobile(String m) => state = state.copyWith(mobile: m);
 
+  void continueAsGuest() {
+    state = state.copyWith(
+      isGuest: true,
+      loggedIn: true,
+      user: UserModel(
+        id: 'guest_user',
+        fname: 'Guest',
+        lname: 'Explorer',
+        mobile: '9894169716',
+        email: 'guest.explorer@righttouch.com',
+        profileCompleted: true,
+      ),
+    );
+    _invalidateUserData();
+  }
+
+  void _invalidateUserData() {
+    ref.invalidate(cartProvider);
+    ref.invalidate(myBookingsProvider);
+    ref.invalidate(addressListProvider);
+    ref.invalidate(notificationListProvider);
+    ref.invalidate(unreadNotificationCountProvider);
+    ref.invalidate(paymentListProvider);
+    ref.invalidate(quotationListProvider);
+  }
+
   Future<void> bootstrap() async {
     if (_bootstrapping || state.user != null) return;
     _bootstrapping = true;
@@ -55,7 +100,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final t = ref.read(tokenStorageProvider);
       await t.loadCache();
       if (t.cachedToken?.isNotEmpty == true) {
-        state = state.copyWith(loggedIn: true, loading: true);
+        state = state.copyWith(loggedIn: true, isGuest: false, loading: true);
         try {
           final r = await ref.read(authRepoProvider).me();
           if (r is ApiOk) {
@@ -63,20 +108,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
             final m = asMap(d);
             state = state.copyWith(
                 user: UserModel.fromJson(m.containsKey('user') ? m['user'] : d),
+                isGuest: false,
                 loading: false);
           } else {
             // Access token dead → try silent refresh before forcing login.
             final refreshed = await refreshSession();
             if (!refreshed) {
               await t.clear();
-              state = state.copyWith(loading: false, loggedIn: false, user: null);
+              state = state.copyWith(loading: false, loggedIn: false, isGuest: false, user: null);
             } else {
               await bootstrap();
             }
           }
         } catch (_) {
           await t.clear();
-          state = state.copyWith(loading: false, loggedIn: false, user: null);
+          state = state.copyWith(loading: false, loggedIn: false, isGuest: false, user: null);
         }
       }
     } finally {
@@ -157,7 +203,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
           ? await ref.read(authRepoProvider).verifySignupOtp(mobile, otp)
           : await ref.read(authRepoProvider).verifyLoginOtp(mobile, otp);
       await _persistSession(s);
-      state = state.copyWith(loading: false, loggedIn: true, user: s.user);
+      state = state.copyWith(
+        loading: false,
+        loggedIn: true,
+        isGuest: false,
+        user: s.user,
+      );
+      _invalidateUserData();
       return null;
     } catch (e) {
       state = state.copyWith(loading: false);
@@ -204,9 +256,46 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
     await ref.read(tokenStorageProvider).clear();
     state = AuthState();
+    _invalidateUserData();
   }
 
-  void setUser(UserModel u) => state = state.copyWith(user: u);
+  void setUser(UserModel u) {
+    state = state.copyWith(user: u, isGuest: false);
+    _invalidateUserData();
+  }
+
+  Future<void> refreshUser() async {
+    try {
+      final r = await ref.read(authRepoProvider).me();
+      if (r is ApiOk) {
+        final d = r.data;
+        final m = asMap(d);
+        state = state.copyWith(
+          user: UserModel.fromJson(m.containsKey('user') ? m['user'] : d),
+        );
+      }
+    } catch (_) {}
+  }
+
+  Future<ApiResult<dynamic>> updateUserProfile(Map<String, dynamic> body) async {
+    final r = await ref.read(authRepoProvider).updateProfile(body);
+    if (r is ApiOk) {
+      final d = r.data;
+      final m = asMap(d);
+      final rawUser = m.containsKey('user')
+          ? m['user']
+          : (m.containsKey('result') ? m['result'] : d);
+      if (rawUser is Map &&
+          (rawUser.containsKey('_id') ||
+              rawUser.containsKey('id') ||
+              rawUser.containsKey('fname'))) {
+        state = state.copyWith(user: UserModel.fromJson(rawUser));
+      } else {
+        await refreshUser();
+      }
+    }
+    return r;
+  }
 }
 
 final authProvider =
@@ -215,8 +304,19 @@ final authProvider =
 final productRepoProvider = Provider((ref) => ProductRepository(ref.watch(gatewayProvider)));
 
 // ---------- catalog ----------
-final categoryListProvider =
-    FutureProvider((ref) => ref.watch(catalogRepoProvider).categories());
+final categoryListProvider = FutureProvider((ref) async {
+  try {
+    final list = await ref.watch(catalogRepoProvider).categories();
+    LocalCacheService.instance.cacheCategories(list.map((c) => c.toJson()).toList());
+    return list;
+  } catch (e) {
+    final cached = await LocalCacheService.instance.getCachedCategories();
+    if (cached != null && cached.isNotEmpty) {
+      return cached.map((m) => CategoryModel.fromJson(m)).toList();
+    }
+    rethrow;
+  }
+});
 
 final serviceCategoriesProvider = FutureProvider((ref) async {
   final cats = await ref.watch(categoryListProvider.future);
@@ -250,7 +350,7 @@ final serviceListProvider = FutureProvider((ref) async {
       .services(search: q.search, categoryId: q.categoryId);
   return res.$1;
 });
-final serviceDetailProvider = FutureProvider.family(
+final serviceDetailProvider = FutureProvider.autoDispose.family(
     (ref, String id) => ref.watch(catalogRepoProvider).service(id));
 
 class ProductQuery {
@@ -273,30 +373,200 @@ final productListProvider = FutureProvider((ref) async {
       .products(search: q.search, categoryId: q.categoryId);
 });
 
+// ---------- Guest Mode Dummy Data ----------
+final _guestCartItems = [
+  CartItemModel(
+    id: 'guest_cart_1',
+    itemId: 'solar_inverter_svc',
+    itemType: 'service',
+    name: 'Solar Hybrid Inverter General Service',
+    image: 'assets/images/solar_inverter.jpg',
+    price: 1499,
+    originalPrice: 1999,
+    qty: 1,
+  ),
+  CartItemModel(
+    id: 'guest_cart_2',
+    itemId: 'ac_cleaning_svc',
+    itemType: 'service',
+    name: 'AC Deep Cleaning & Anti-Bacterial Wash',
+    image: 'assets/images/ac_banner.jpg',
+    price: 999,
+    originalPrice: 1299,
+    qty: 1,
+  ),
+];
+
+final _guestBookings = [
+  BookingModel(
+    id: 'BK-89241',
+    status: 'confirmed',
+    serviceName: 'Solar Hybrid Inverter General Service',
+    amount: 1499,
+    scheduledAt: 'Tomorrow, 10:30 AM',
+    addressLine: 'Flat 402, Green Palm Residency, Indiranagar, Bengaluru',
+    technicianName: 'Rajesh Kumar (Verified Expert)',
+    paymentStatus: 'paid',
+  ),
+  BookingModel(
+    id: 'BK-78103',
+    status: 'completed',
+    serviceName: 'AC Deep Cleaning & Anti-Bacterial Wash',
+    amount: 999,
+    scheduledAt: '3 days ago',
+    addressLine: 'Flat 402, Green Palm Residency, Indiranagar, Bengaluru',
+    technicianName: 'Suresh Raina',
+    paymentStatus: 'paid',
+  ),
+];
+
+final _guestAddresses = [
+  AddressModel(
+    id: 'addr_1',
+    type: 'Home',
+    line: 'Flat 402, Green Palm Residency, 12th Main Road, Indiranagar',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    pincode: '560038',
+    isDefault: true,
+  ),
+  AddressModel(
+    id: 'addr_2',
+    type: 'Office',
+    line: 'Tech Tower 3, 5th Floor, Outer Ring Road, Bellandur',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    pincode: '560103',
+    isDefault: false,
+  ),
+];
+
+final _guestNotifications = [
+  NotificationModel(
+    id: 'notif_1',
+    title: 'Technician Assigned',
+    body: 'Rajesh Kumar has been assigned for your Solar Inverter service tomorrow at 10:30 AM.',
+    read: false,
+    createdAt: '10 mins ago',
+  ),
+  NotificationModel(
+    id: 'notif_2',
+    title: 'Welcome Offer (₹200 OFF)',
+    body: 'Use coupon code FIRSTTOUCH to get ₹200 OFF on your first booking!',
+    read: false,
+    createdAt: '1 hour ago',
+  ),
+  NotificationModel(
+    id: 'notif_3',
+    title: 'Service Completed',
+    body: 'Your AC Deep Cleaning was completed. Please rate your technician.',
+    read: true,
+    createdAt: '3 days ago',
+  ),
+];
+
+final _guestPayments = [
+  PaymentModel(
+    bookingId: 'BK-89241',
+    status: 'success',
+    amount: 1499,
+    method: 'UPI (Razorpay)',
+    txnId: 'pay_Nz9Kq18XlaP',
+  ),
+  PaymentModel(
+    bookingId: 'BK-78103',
+    status: 'success',
+    amount: 999,
+    method: 'Credit Card',
+    txnId: 'pay_Mk3Tz52XplQ',
+  ),
+];
+
+final _guestQuotations = [
+  QuotationModel(
+    id: 'QT-5012',
+    status: 'approved',
+    title: '5kW Rooftop Solar Hybrid System',
+    amount: 245000,
+    createdAt: 'Yesterday',
+  ),
+];
+
 // ---------- bookings / cart / addresses / misc ----------
-final myBookingsProvider =
-    FutureProvider((ref) => ref.watch(bookingRepoProvider).myBookings());
-final bookingDetailProvider = FutureProvider.family(
-    (ref, String id) => ref.watch(bookingRepoProvider).detail(id));
-final cartProvider =
-    FutureProvider((ref) => ref.watch(cartRepoProvider).myCart());
-final addressListProvider =
-    FutureProvider((ref) => ref.watch(addressRepoProvider).list());
+final myBookingsProvider = FutureProvider((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return _guestBookings;
+  return ref.watch(bookingRepoProvider).myBookings();
+});
+
+final bookingDetailProvider = FutureProvider.autoDispose.family(
+    (ref, String id) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) {
+    return _guestBookings.where((b) => b.id == id).firstOrNull ?? _guestBookings.first;
+  }
+  final cached = ref.read(myBookingsProvider).valueOrNull?.where((b) => b.id == id).firstOrNull;
+  try {
+    return await ref.watch(bookingRepoProvider).detail(id);
+  } catch (e) {
+    if (cached != null) return cached;
+    rethrow;
+  }
+});
+
+final cartProvider = FutureProvider((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return _guestCartItems;
+  return ref.watch(cartRepoProvider).myCart();
+});
+
+final addressListProvider = FutureProvider((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return _guestAddresses;
+  return ref.watch(addressRepoProvider).list();
+});
+
 final selectedAddressProvider = StateProvider<AddressModel?>((_) => null);
-final paymentListProvider =
-    FutureProvider((ref) => ref.watch(paymentRepoProvider).list());
+
+final paymentListProvider = FutureProvider((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return _guestPayments;
+  return ref.watch(paymentRepoProvider).list();
+});
+
 final paymentSummaryProvider =
     FutureProvider((ref) => ref.watch(paymentRepoProvider).summary());
-final quotationListProvider =
-    FutureProvider((ref) => ref.watch(supportRepoProvider).quotations());
+
+final quotationListProvider = FutureProvider((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return _guestQuotations;
+  return ref.watch(supportRepoProvider).quotations();
+});
+
+final quotationDetailProvider = FutureProvider.autoDispose.family<QuotationModel, String>(
+    (ref, String id) async {
+  ref.read(supportRepoProvider).viewQuotation(id);
+  return ref.watch(supportRepoProvider).quotationDetail(id);
+});
+
 final quoteRequestListProvider =
     FutureProvider((ref) => ref.watch(supportRepoProvider).quoteRequests());
+
 final productBookingsProvider =
     FutureProvider((ref) => ref.watch(supportRepoProvider).productBookings());
-final notificationListProvider =
-    FutureProvider((ref) => ref.watch(supportRepoProvider).notifications());
-final unreadNotificationCountProvider =
-    FutureProvider((ref) => ref.watch(supportRepoProvider).unreadCount());
+
+final notificationListProvider = FutureProvider((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return _guestNotifications;
+  return ref.watch(supportRepoProvider).notifications();
+});
+
+final unreadNotificationCountProvider = FutureProvider((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return 2;
+  return ref.watch(supportRepoProvider).unreadCount();
+});
+
 final myReportsProvider =
     FutureProvider((ref) => ref.watch(supportRepoProvider).myReports());
 final reportCategoriesProvider =

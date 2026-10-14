@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/widgets/app_image.dart';
+import '../../../core/widgets/ui.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../../data/models/models.dart';
 import '../../providers/providers.dart';
@@ -148,10 +149,10 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
         label,
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-          color: isSelected ? const Color(0xFF059669) : const Color(0xFF1E293B),
+          color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF1E293B),
         ),
       ),
-      trailing: isSelected ? const Icon(Icons.check_circle_rounded, color: Color(0xFF059669)) : null,
+      trailing: isSelected ? const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A)) : null,
       onTap: () {
         setState(() => _sortBy = id);
         Navigator.pop(ctx);
@@ -213,7 +214,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                         Navigator.pop(ctx);
                       },
                       selectedColor: const Color(0xFFE6FDF1),
-                      checkmarkColor: const Color(0xFF059669),
+                      checkmarkColor: const Color(0xFF16A34A),
                     ),
                     for (final cat in categories)
                       FilterChip(
@@ -224,7 +225,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                           Navigator.pop(ctx);
                         },
                         selectedColor: const Color(0xFFE6FDF1),
-                        checkmarkColor: const Color(0xFF059669),
+                        checkmarkColor: const Color(0xFF16A34A),
                       ),
                   ],
                 ),
@@ -237,7 +238,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                       Navigator.pop(ctx);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF059669),
+                      backgroundColor: const Color(0xFF16A34A),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -320,6 +321,8 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                         context,
                         title: 'Quote Requested',
                         message: 'Quotation request submitted! Our engineer will prepare a proposal.',
+                        actionLabel: 'View Quotations',
+                        onAction: () => context.push('/quotations'),
                       );
                     } catch (e) {
                       if (!mounted) return;
@@ -332,7 +335,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
+                    backgroundColor: const Color(0xFF16A34A),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -361,10 +364,10 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-      appBar: const RightTouchTopAppBar(),
+      backgroundColor: Colors.white,
+      appBar: const RightTouchTopAppBar(title: 'Products'),
       body: RefreshIndicator(
-        color: const Color(0xFF059669),
+        color: const Color(0xFF16A34A),
         onRefresh: () async {
           ref.invalidate(productListProvider);
           ref.invalidate(categoryListProvider);
@@ -382,6 +385,61 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
               // 2. HERO CAROUSEL BANNER: "Solar Products for a Better Tomorrow"
               _buildHeroBanner(context),
+
+              const SizedBox(height: 14),
+
+              // Stage 7: Custom Quotes & Orders Quick Access Banner
+              InkWell(
+                onTap: () => context.push('/quotations'),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF064E3B).withAlpha(120) : const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF15803D) : const Color(0xFFBBF7D0),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.request_quote_rounded, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Custom Quotes & Equipment Orders',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Request quotes for industrial/solar equipment or track active orders',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF16A34A)),
+                    ],
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 18),
 
@@ -412,13 +470,13 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                         Text(
                           'View All',
                           style: TextStyle(
-                            color: Color(0xFF059669),
+                            color: Color(0xFF16A34A),
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         SizedBox(width: 2),
-                        Icon(Icons.arrow_forward_rounded, color: Color(0xFF059669), size: 14),
+                        Icon(Icons.arrow_forward_rounded, color: Color(0xFF16A34A), size: 14),
                       ],
                     ),
                   ),
@@ -480,7 +538,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 loading: () => const Center(
                   child: Padding(
                     padding: EdgeInsets.all(40),
-                    child: CircularProgressIndicator(color: Color(0xFF059669)),
+                    child: RtLoader(),
                   ),
                 ),
                 error: (error, stack) => _buildEmptyState(isDark),
@@ -591,10 +649,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
               width: 170,
               child: Opacity(
                 opacity: 0.65,
-                child: Image.asset(
-                  'assets/images/solar_banner.jpg',
+                child: const AppImage(
+                  url: 'assets/images/solar_banner.jpg',
                   fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) => const SizedBox(),
                 ),
               ),
             ),
@@ -650,7 +707,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                         ),
                         TextSpan(
                           text: 'Better Tomorrow',
-                          style: TextStyle(color: Color(0xFF10B981)),
+                          style: TextStyle(color: Color(0xFF22C55E)),
                         ),
                       ],
                     ),
@@ -782,7 +839,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFF059669)),
+          Icon(icon, size: 12, color: const Color(0xFF16A34A)),
           const SizedBox(height: 1),
           Text(
             label,
@@ -807,7 +864,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
       _CategoryIconItem('Surveillance', Icons.videocam_rounded, 'surveil', iconColor: const Color(0xFF3B82F6)),
       _CategoryIconItem('Appliances', Icons.local_laundry_service_outlined, 'appliance', iconColor: const Color(0xFF64748B)),
       _CategoryIconItem('AC & Cooling', Icons.ac_unit_rounded, 'air', iconColor: const Color(0xFF06B6D4)),
-      _CategoryIconItem('Electrical', Icons.bolt_rounded, 'electr', iconColor: const Color(0xFF10B981)),
+      _CategoryIconItem('Electrical', Icons.bolt_rounded, 'electr', iconColor: const Color(0xFF22C55E)),
       _CategoryIconItem('More', Icons.apps_rounded, 'more', iconColor: const Color(0xFF8B5CF6)),
     ];
 
@@ -862,7 +919,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF059669)
+                ? const Color(0xFF16A34A)
                 : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
             width: isSelected ? 1.5 : 1.0,
           ),
@@ -880,7 +937,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             Icon(
               item.icon,
               size: 24,
-              color: isSelected ? const Color(0xFF059669) : (item.iconColor ?? const Color(0xFF64748B)),
+              color: isSelected ? const Color(0xFF16A34A) : (item.iconColor ?? const Color(0xFF64748B)),
             ),
             const SizedBox(height: 4),
             Text(
@@ -892,7 +949,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 fontSize: 9.5,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 color: isSelected
-                    ? const Color(0xFF059669)
+                    ? const Color(0xFF16A34A)
                     : (isDark ? Colors.white : const Color(0xFF1E293B)),
               ),
             ),
@@ -975,7 +1032,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
-                      color: _isGridView ? const Color(0xFF059669) : Colors.transparent,
+                      color: _isGridView ? const Color(0xFF16A34A) : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -992,7 +1049,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
-                      color: !_isGridView ? const Color(0xFF059669) : Colors.transparent,
+                      color: !_isGridView ? const Color(0xFF16A34A) : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -1030,7 +1087,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF059669)
+                ? const Color(0xFF16A34A)
                 : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
           ),
         ),
@@ -1038,7 +1095,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 14, color: isSelected ? const Color(0xFF059669) : const Color(0xFF64748B)),
+              Icon(icon, size: 14, color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF64748B)),
               const SizedBox(width: 5),
             ],
             Text(
@@ -1047,7 +1104,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 fontSize: 11.5,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 color: isSelected
-                    ? const Color(0xFF059669)
+                    ? const Color(0xFF16A34A)
                     : (isDark ? Colors.white : const Color(0xFF1E293B)),
               ),
             ),
@@ -1056,7 +1113,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
               Icon(
                 Icons.keyboard_arrow_down_rounded,
                 size: 15,
-                color: isSelected ? const Color(0xFF059669) : const Color(0xFF64748B),
+                color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF64748B),
               ),
             ],
           ],
@@ -1136,10 +1193,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 width: 75,
                 child: Opacity(
                   opacity: 0.85,
-                  child: Image.asset(
-                    imagePath,
+                  child: AppImage(
+                    url: imagePath,
                     fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, stack) => const SizedBox(),
                   ),
                 ),
               ),
@@ -1254,14 +1310,13 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 child: Container(
                   height: 120,
                   width: double.infinity,
-                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                  child: p.image != null && p.image!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: p.image!,
-                          fit: BoxFit.cover,
-                          errorWidget: (ctx, err, stack) => _fallbackProductImage(p),
-                        )
-                      : _fallbackProductImage(p),
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                  padding: const EdgeInsets.all(4),
+                  child: AppImage(
+                    url: p.image,
+                    fit: BoxFit.contain,
+                    errorWidget: _fallbackProductImage(p),
+                  ),
                 ),
               ),
 
@@ -1459,7 +1514,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                           child: ElevatedButton(
                             onPressed: () => _handleProductAction(p),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF059669),
+                              backgroundColor: const Color(0xFF16A34A),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: EdgeInsets.zero,
@@ -1531,14 +1586,13 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             child: Container(
               width: 100,
               height: 100,
-              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-              child: p.image != null && p.image!.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: p.image!,
-                      fit: BoxFit.cover,
-                      errorWidget: (ctx, err, stack) => _fallbackProductImage(p),
-                    )
-                  : _fallbackProductImage(p),
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              padding: const EdgeInsets.all(4),
+              child: AppImage(
+                url: p.image,
+                fit: BoxFit.contain,
+                errorWidget: _fallbackProductImage(p),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -1560,7 +1614,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                       child: Text(
                         p.categoryName ?? 'RightTouch',
                         style: const TextStyle(
-                          color: Color(0xFF059669),
+                          color: Color(0xFF16A34A),
                           fontSize: 9,
                           fontWeight: FontWeight.w800,
                         ),
@@ -1635,7 +1689,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                         child: ElevatedButton(
                           onPressed: () => _handleProductAction(p),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF059669),
+                            backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -1688,7 +1742,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF059669),
+              color: Color(0xFF16A34A),
             ),
           ),
           const SizedBox(width: 4),
@@ -1714,7 +1768,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 style: const TextStyle(
                   fontSize: 8.5,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF059669),
+                  color: Color(0xFF16A34A),
                 ),
               ),
             ),
@@ -1759,15 +1813,15 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     final lower = (p.name + (p.categoryName ?? '')).toLowerCase();
     if (lower.contains('solar') || lower.contains('perc')) {
       return const [
-        _SpecItem(Icons.bolt_rounded, '550W Output', Color(0xFF10B981)),
-        _SpecItem(Icons.verified_rounded, '25 Years Warranty', Color(0xFF059669)),
-        _SpecItem(Icons.eco_rounded, 'High Efficiency', Color(0xFF10B981)),
+        _SpecItem(Icons.bolt_rounded, '550W Output', Color(0xFF22C55E)),
+        _SpecItem(Icons.verified_rounded, '25 Years Warranty', Color(0xFF16A34A)),
+        _SpecItem(Icons.eco_rounded, 'High Efficiency', Color(0xFF22C55E)),
       ];
     } else if (lower.contains('inverter') || lower.contains('mppt')) {
       return const [
-        _SpecItem(Icons.bolt_rounded, '5kVA Hybrid', Color(0xFF10B981)),
-        _SpecItem(Icons.settings_suggest_rounded, 'MPPT Technology', Color(0xFF059669)),
-        _SpecItem(Icons.verified_rounded, '5 Years Warranty', Color(0xFF059669)),
+        _SpecItem(Icons.bolt_rounded, '5kVA Hybrid', Color(0xFF22C55E)),
+        _SpecItem(Icons.settings_suggest_rounded, 'MPPT Technology', Color(0xFF16A34A)),
+        _SpecItem(Icons.verified_rounded, '5 Years Warranty', Color(0xFF16A34A)),
       ];
     } else if (lower.contains('camera') || lower.contains('cctv') || lower.contains('surveil')) {
       return const [
@@ -1778,13 +1832,13 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     } else if (lower.contains('ac') || lower.contains('air') || lower.contains('cool')) {
       return const [
         _SpecItem(Icons.star_rounded, '5 Star Rating', Color(0xFFFBBF24)),
-        _SpecItem(Icons.energy_savings_leaf_outlined, 'Inverter Tech', Color(0xFF10B981)),
-        _SpecItem(Icons.build_rounded, 'Free Installation', Color(0xFF059669)),
+        _SpecItem(Icons.energy_savings_leaf_outlined, 'Inverter Tech', Color(0xFF22C55E)),
+        _SpecItem(Icons.build_rounded, 'Free Installation', Color(0xFF16A34A)),
       ];
     } else {
       return [
-        const _SpecItem(Icons.verified_rounded, 'Genuine RightTouch', Color(0xFF059669)),
-        _SpecItem(Icons.security_rounded, p.warranty, const Color(0xFF10B981)),
+        const _SpecItem(Icons.verified_rounded, 'Genuine RightTouch', Color(0xFF16A34A)),
+        _SpecItem(Icons.security_rounded, p.warranty, const Color(0xFF22C55E)),
         const _SpecItem(Icons.local_shipping_outlined, 'Quick Dispatch', Color(0xFF64748B)),
       ];
     }
@@ -1801,11 +1855,11 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
       assetPath = 'assets/images/ac_banner.jpg';
     }
 
-    return Image.asset(
-      assetPath,
+    return AppImage(
+      url: assetPath,
       fit: BoxFit.cover,
-      errorBuilder: (ctx, err, stack) => const Center(
-        child: Icon(Icons.inventory_2_outlined, color: Color(0xFF059669), size: 30),
+      errorWidget: const Center(
+        child: Icon(Icons.inventory_2_outlined, color: Color(0xFF16A34A), size: 30),
       ),
     );
   }
@@ -1948,7 +2002,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           ElevatedButton(
             onPressed: _resetFilters,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF059669),
+              backgroundColor: const Color(0xFF16A34A),
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

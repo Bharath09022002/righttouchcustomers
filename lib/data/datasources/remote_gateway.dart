@@ -154,7 +154,11 @@ class RemoteGateway {
   Future<ApiResult<dynamic>> updateAddress(Map<String, dynamic> body) =>
       api.put(ApiEndpoints.addresses, body);
   Future<ApiResult<dynamic>> deleteAddress(String addressId) =>
-      api.delete(ApiEndpoints.addresses, {'addressId': addressId});
+      api.delete(
+        ApiEndpoints.addresses,
+        {'addressId': addressId, 'id': addressId, '_id': addressId},
+        {'addressId': addressId, 'id': addressId},
+      );
   Future<ApiResult<dynamic>> setDefault(Map<String, dynamic> body) =>
       api.put(ApiEndpoints.addressDefault, body);
   Future<ApiResult<dynamic>> searchAddress(String q) =>
@@ -184,6 +188,8 @@ class RemoteGateway {
       api.post(ApiEndpoints.quoteRequestCancel(id), {});
   Future<ApiResult<dynamic>> quotations() => api.get(ApiEndpoints.quotations);
   Future<ApiResult<dynamic>> quotation(String id) => api.get(ApiEndpoints.quotation(id));
+  Future<ApiResult<dynamic>> quotationView(String id) =>
+      api.post(ApiEndpoints.quotationView(id), {});
   Future<ApiResult<dynamic>> quotationAccept(String id) =>
       api.post(ApiEndpoints.quotationAccept(id), {});
   Future<ApiResult<dynamic>> quotationReject(String id) =>

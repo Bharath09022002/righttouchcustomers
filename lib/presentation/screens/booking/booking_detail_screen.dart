@@ -6,6 +6,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../providers/providers.dart';
+import '../../widgets/review_bottom_sheet.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String id;
@@ -28,8 +29,23 @@ class _S extends ConsumerState<BookingDetailScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Cancel booking?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-            for (final r in reasons)
-              RadioListTile<String>(value: r, groupValue: picked, title: Text(r), onChanged: (v) { picked = v; Navigator.pop(c); }),
+            RadioGroup<String>(
+              groupValue: picked,
+              onChanged: (v) {
+                picked = v;
+                Navigator.pop(c);
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final r in reasons)
+                    RadioListTile<String>(
+                      value: r,
+                      title: Text(r),
+                    ),
+                ],
+              ),
+            ),
           ]),
         ),
       ),
@@ -90,46 +106,34 @@ class _S extends ConsumerState<BookingDetailScreen> {
   }
 
   Future<void> _rate() async {
-    int stars = 5;
-    final c = TextEditingController();
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Rate this service', style: TextStyle(fontWeight: FontWeight.w800)),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            for (int i = 1; i <= 5; i++)
-              IconButton(onPressed: () => setState(() => stars = i), icon: Icon(Icons.star, color: i <= stars ? AppColors.star : AppColors.grey200)),
-          ]),
-          TextField(controller: c, decoration: const InputDecoration(hintText: 'Write a review (optional)')),
-          const SizedBox(height: 12),
-          AppButton(label: 'Submit rating', onPressed: () async {
-            try {
-              await ref.read(supportRepoProvider).rating({'bookingId': widget.id, 'rating': stars, 'review': c.text});
-              if (ctx.mounted) Navigator.pop(ctx);
-              if (mounted) {
-                showSuccess(
-                  context,
-                  title: 'Rating Submitted',
-                  message: 'Thank you for your rating and feedback!',
-                );
-              }
-            } catch (e) {
-              if (ctx.mounted) {
-                final appErr = mapException(e);
-                showError(
-                  ctx,
-                  title: 'Rating Failed',
-                  message: appErr.userMessage,
-                );
-              }
-            }
-          }),
-          const SizedBox(height: 20),
-        ]),
-      ),
+    final booking = ref.read(bookingDetailProvider(widget.id)).valueOrNull;
+    await showReviewBottomSheet(
+      context,
+      bookingId: widget.id,
+      serviceTitle: booking?.serviceName ?? 'Service',
+      technicianName: booking?.technicianName,
+      onSubmit: (rating, tags, comment) async {
+        try {
+          final payload = {
+            'bookingId': widget.id,
+            'rating': rating,
+            'tags': tags,
+            'review': comment,
+          };
+          await ref.read(supportRepoProvider).rating(payload);
+          return true;
+        } catch (e) {
+          if (mounted) {
+            final appErr = mapException(e);
+            showError(
+              context,
+              title: 'Rating Failed',
+              message: appErr.userMessage,
+            );
+          }
+          return false;
+        }
+      },
     );
   }
 
@@ -172,8 +176,11 @@ class _S extends ConsumerState<BookingDetailScreen> {
           const SizedBox(height: 8),
           AppButton(label: 'Cancel booking', outlined: true, fullWidth: true, loading: _busy, onPressed: _cancel),
         ]),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => ErrorView(message: '$e', onRetry: () => ref.invalidate(bookingDetailProvider(widget.id))),
+        loading: () => const Center(child: RtLoader()),
+        error: (e, _) => ErrorView(
+          message: mapException(e).userMessage,
+          onRetry: () => ref.invalidate(bookingDetailProvider(widget.id)),
+        ),
       ),
     );
   }

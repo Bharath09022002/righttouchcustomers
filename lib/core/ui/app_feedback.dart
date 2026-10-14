@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../../widgets/rt_loader.dart';
 
 // ---------------------------------------------------------------------------
 // TASK 11 — Central error mapper + popup feedback helper
@@ -201,7 +202,7 @@ void showSuccess(
   );
 }
 
-/// Show an error popup. Optionally include a [onRetry] or custom [onAction].
+/// Show an error / notice popup with white card, brand green icon & badge, and black text.
 void showError(
   BuildContext context, {
   required String title,
@@ -217,8 +218,9 @@ void showError(
     context: context,
     barrierDismissible: true,
     builder: (ctx) => _FeedbackDialog(
-      icon: Icons.error_rounded,
-      iconColor: AppColors.danger,
+      icon: Icons.info_outline_rounded,
+      iconColor: AppColors.primary,
+      iconBgColor: AppColors.primarySoft,
       title: title,
       message: message,
       actionLabel: actLabel,
@@ -233,6 +235,16 @@ void showError(
   );
 }
 
+/// Show full-screen Right Touch branded loading overlay
+void showLoading(BuildContext context, {String? message}) {
+  RtLoader.showOverlay(context, message: message);
+}
+
+/// Hide full-screen Right Touch branded loading overlay
+Future<void> hideLoading({bool enforceMinDisplay = true}) async {
+  await RtLoader.hideOverlay(enforceMinDisplay: enforceMinDisplay);
+}
+
 void _dismissCurrent(BuildContext context) {
   // Dismiss any existing SnackBar to avoid stacking
   ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
@@ -241,6 +253,7 @@ void _dismissCurrent(BuildContext context) {
 class _FeedbackDialog extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
+  final Color? iconBgColor;
   final String title;
   final String message;
   final String? actionLabel;
@@ -250,6 +263,7 @@ class _FeedbackDialog extends StatelessWidget {
   const _FeedbackDialog({
     required this.icon,
     required this.iconColor,
+    this.iconBgColor,
     required this.title,
     required this.message,
     this.actionLabel,
@@ -259,47 +273,89 @@ class _FeedbackDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bg = iconBgColor ?? AppColors.primarySoft;
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Green badge container (No red)
           Container(
-            width: 56,
-            height: 56,
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
+              color: bg,
               shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primaryBorder, width: 1.5),
             ),
-            child: Icon(icon, color: iconColor, size: 32),
+            child: Icon(icon, color: iconColor, size: 30),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
+          // Title in solid black
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.2,
+            ),
           ),
           const SizedBox(height: 8),
+          // Message in black / dark slate
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, height: 1.4),
+            style: const TextStyle(
+              color: Color(0xFF334155),
+              fontSize: 13.5,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
       actions: [
-        if (actionLabel != null && onAction != null)
-          TextButton(
-            onPressed: onAction,
-            child: Text(
-              actionLabel!,
-              style: TextStyle(color: iconColor, fontWeight: FontWeight.w700),
+        if (actionLabel != null && onAction != null) ...[
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: onAction,
+              child: Text(
+                actionLabel!,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
             ),
           ),
-        TextButton(
-          onPressed: onOk,
-          child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+        ],
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: onOk,
+            child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+          ),
         ),
       ],
     );

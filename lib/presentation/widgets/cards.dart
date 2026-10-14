@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/ui/app_feedback.dart';
 import '../../../data/models/models.dart';
 import '../../../core/utils/format.dart';
+import 'service_share_sheet.dart';
 
 const _softShadow = [
   BoxShadow(color: Color(0x0F000000), blurRadius: 16, offset: Offset(0, 6)),
@@ -42,14 +40,13 @@ class HomeServiceCategoryCard extends StatelessWidget {
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: category.image != null && category.image!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: category.image!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(color: const Color(0xFFF1F5F9)),
-                        errorWidget: (context, error, stackTrace) => _fallbackImage(),
-                      )
-                    : _fallbackImage(),
+                child: AppImage(
+                  url: category.image,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorWidget: _fallbackImage(),
+                ),
               ),
             ),
             Padding(
@@ -126,10 +123,10 @@ class ProfessionalProductCategoryCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFF071B10),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.6), width: 1.5),
+                  border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.6), width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                      color: const Color(0xFF22C55E).withValues(alpha: 0.25),
                       blurRadius: 10,
                       spreadRadius: 1,
                     )
@@ -137,14 +134,14 @@ class ProfessionalProductCategoryCard extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(15),
-                  child: category.image != null && category.image!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: category.image!,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(color: const Color(0xFF071B10)),
-                          errorWidget: (context, error, stackTrace) => _neonIcon(isSolar, isCamera, isBattery),
-                        )
-                      : _neonIcon(isSolar, isCamera, isBattery),
+                  child: AppImage(
+                    url: category.image,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    placeholder: Container(color: const Color(0xFF071B10)),
+                    errorWidget: _neonIcon(isSolar, isCamera, isBattery),
+                  ),
                 ),
               ),
             ),
@@ -239,7 +236,7 @@ class ExclusiveOfferCard extends StatelessWidget {
           border: Border.all(color: const Color(0xFFD1FAE5), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF10B981).withValues(alpha: 0.06),
+              color: const Color(0xFF22C55E).withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, 4),
             )
@@ -265,7 +262,7 @@ class ExclusiveOfferCard extends StatelessWidget {
                       )
                     ],
                   ),
-                  child: Icon(icon, color: const Color(0xFF059669), size: 26),
+                  child: Icon(icon, color: const Color(0xFF16A34A), size: 26),
                 ),
                 const Spacer(),
                 Container(
@@ -327,12 +324,14 @@ class ApplianceServiceItemCard extends StatelessWidget {
   final ServiceModel service;
   final VoidCallback onTap;
   final VoidCallback onBook;
+  final bool showTopBadge;
 
   const ApplianceServiceItemCard({
     super.key,
     required this.service,
     required this.onTap,
     required this.onBook,
+    this.showTopBadge = true,
   });
 
   @override
@@ -357,62 +356,52 @@ class ApplianceServiceItemCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                   child: Container(
-                    height: 130,
+                    height: 135,
                     width: double.infinity,
                     color: const Color(0xFFF8FAFC),
-                    child: service.image != null && service.image!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: service.image!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(color: const Color(0xFFF8FAFC)),
-                            errorWidget: (context, error, stackTrace) => _serviceFallbackImage(),
-                          )
-                        : _serviceFallbackImage(),
+                    padding: const EdgeInsets.all(6),
+                    child: AppImage(
+                      url: service.image,
+                      fit: BoxFit.contain,
+                      errorWidget: _serviceFallbackImage(),
+                    ),
                   ),
                 ),
-                // Top Service badge
-                Positioned(
-                  left: 10,
-                  top: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF059669),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x22000000),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        )
-                      ],
-                    ),
-                    child: const Text(
-                      'TOP SERVICE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
+                // Top Service badge (only shown if showTopBadge is true)
+                if (showTopBadge && service.isTopService)
+                  Positioned(
+                    left: 10,
+                    top: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x22000000),
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          )
+                        ],
+                      ),
+                      child: const Text(
+                        'TOP SERVICE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 // Share button
                 Positioned(
                   right: 8,
                   top: 8,
                   child: InkWell(
-                    onTap: () {
-                      Clipboard.setData(ClipboardData(
-                        text: '${service.name} - Book at https://www.righttouchservice.com/',
-                      ));
-                      showSuccess(
-                        context,
-                        title: 'Link Copied',
-                        message: 'Service link copied to clipboard!',
-                      );
-                    },
+                    onTap: () => showServiceShareSheet(context, service),
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
                       width: 32,
@@ -454,7 +443,7 @@ class ApplianceServiceItemCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.verified_user_outlined, size: 10, color: Color(0xFF059669)),
+                              const Icon(Icons.verified_user_outlined, size: 10, color: Color(0xFF16A34A)),
                               const SizedBox(width: 3),
                               Flexible(
                                 child: Text(
@@ -462,7 +451,7 @@ class ApplianceServiceItemCard extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    color: Color(0xFF059669),
+                                    color: Color(0xFF16A34A),
                                     fontSize: 9,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -511,7 +500,7 @@ class ApplianceServiceItemCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF059669),
+                            color: Color(0xFF16A34A),
                           ),
                         )
                       : const Text(
@@ -519,7 +508,7 @@ class ApplianceServiceItemCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF059669),
+                            color: Color(0xFF16A34A),
                           ),
                         ),
                   const SizedBox(height: 10),
@@ -530,7 +519,7 @@ class ApplianceServiceItemCard extends StatelessWidget {
                       onPressed: onBook,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE6FDF1),
-                        foregroundColor: const Color(0xFF059669),
+                        foregroundColor: const Color(0xFF16A34A),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
@@ -576,7 +565,7 @@ class ApplianceServiceItemCard extends StatelessWidget {
         child: const Icon(
           Icons.electrical_services_outlined,
           size: 38,
-          color: Color(0xFF059669),
+          color: Color(0xFF16A34A),
         ),
       ),
     );
@@ -621,7 +610,7 @@ class WhyRightTouchCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFA7F3D0)),
                 ),
-                child: Icon(icon, color: const Color(0xFF059669), size: 22),
+                child: Icon(icon, color: const Color(0xFF16A34A), size: 22),
               ),
               const Spacer(),
               Container(
@@ -633,7 +622,7 @@ class WhyRightTouchCard extends StatelessWidget {
                 child: Text(
                   badgeText,
                   style: const TextStyle(
-                    color: Color(0xFF059669),
+                    color: Color(0xFF16A34A),
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.5,
@@ -699,18 +688,12 @@ class ProductCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Container(
+                  child: AppImage(
+                    url: product.image,
                     height: 140,
                     width: double.infinity,
-                    color: const Color(0xFFF8FAFC),
-                    child: product.image != null && product.image!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: product.image!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(color: const Color(0xFFF8FAFC)),
-                            errorWidget: (context, error, stackTrace) => _productFallback(),
-                          )
-                        : _productFallback(),
+                    fit: BoxFit.cover,
+                    errorWidget: _productFallback(),
                   ),
                 ),
                 if (product.categoryName != null)
@@ -754,7 +737,7 @@ class ProductCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Color(0xFF059669),
+                              color: Color(0xFF16A34A),
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                             ),
@@ -799,7 +782,7 @@ class ProductCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF059669),
+                            color: Color(0xFF16A34A),
                           ),
                         )
                       else
@@ -819,7 +802,7 @@ class ProductCard extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: onAction,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF059669),
+                        backgroundColor: const Color(0xFF16A34A),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -857,7 +840,7 @@ class ProductCard extends StatelessWidget {
         child: const Icon(
           Icons.inventory_2_outlined,
           size: 32,
-          color: Color(0xFF059669),
+          color: Color(0xFF16A34A),
         ),
       ),
     );

@@ -78,7 +78,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Support & Complaints Desk',
@@ -86,9 +86,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF059669),
+          labelColor: const Color(0xFF16A34A),
           unselectedLabelColor: const Color(0xFF64748B),
-          indicatorColor: const Color(0xFF059669),
+          indicatorColor: const Color(0xFF16A34A),
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
           tabs: const [
@@ -124,7 +124,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
             ),
             child: Row(
               children: const [
-                Icon(Icons.shield_outlined, color: Color(0xFF059669), size: 24),
+                Icon(Icons.shield_outlined, color: Color(0xFF16A34A), size: 24),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -145,19 +145,37 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
           categoriesAsync.when(
             data: (cats) {
               final items = cats.isNotEmpty ? cats : ['Service Quality', 'Technician Delayed', 'Billing Issue', 'Spare Parts Issue', 'Other'];
+              final selected = _selectedCategory ?? (items.isNotEmpty ? items.first : null);
               return DropdownButtonFormField<String>(
-                initialValue: _selectedCategory ?? (items.isNotEmpty ? items.first : null),
+                isExpanded: true,
+                initialValue: items.contains(selected) ? selected : (items.isNotEmpty ? items.first : null),
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
                 ),
-                items: items.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                items: items.map((c) {
+                  String display = c;
+                  if (display.startsWith('{') && display.contains('label:')) {
+                    final match = RegExp(r'label:\s*([^,}]+)').firstMatch(display);
+                    if (match != null) display = match.group(1)!.trim();
+                  }
+                  return DropdownMenuItem<String>(
+                    value: c,
+                    child: Text(
+                      display,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                    ),
+                  );
+                }).toList(),
                 onChanged: (val) => setState(() => _selectedCategory = val),
               );
             },
-            loading: () => const LinearProgressIndicator(),
+            loading: () => const Center(child: Padding(padding: EdgeInsets.all(8.0), child: RtLoader(size: 24))),
             error: (_, __) => const SizedBox(),
           ),
           const SizedBox(height: 16),
@@ -214,7 +232,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     final repAsync = ref.watch(myReportsProvider);
 
     return RefreshIndicator(
-      color: const Color(0xFF059669),
+      color: const Color(0xFF16A34A),
       onRefresh: () async => ref.invalidate(myReportsProvider),
       child: repAsync.when(
         data: (list) {
@@ -282,7 +300,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF059669))),
+        loading: () => const Center(child: RtLoader()),
         error: (e, _) => ErrorView(message: '$e', onRetry: () => ref.invalidate(myReportsProvider)),
       ),
     );

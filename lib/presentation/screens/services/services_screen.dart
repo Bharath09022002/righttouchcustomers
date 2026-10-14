@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../../data/models/models.dart';
@@ -17,21 +18,18 @@ class ServicesScreen extends ConsumerStatefulWidget {
 }
 
 class _ServicesScreenState extends ConsumerState<ServicesScreen> {
-  String? _selectedCategory;
+  CategoryModel? _selectedCategory;
+  bool _initializedCategory = false;
+  bool _showAll = false;
   final String _searchQuery = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedCategory = widget.initialCategory;
-  }
-
-  void _selectCategory(String? catName) {
+  void _selectCategory(CategoryModel? cat) {
     setState(() {
-      _selectedCategory = catName;
+      _selectedCategory = cat;
+      _showAll = false; // Reset to 10 on filter change
     });
     ref.read(serviceQueryProvider.notifier).state =
-        ServiceQuery(_searchQuery, _selectedCategory);
+        ServiceQuery(_searchQuery, cat?.id);
   }
 
   void _bookService(ServiceModel s) async {
@@ -69,27 +67,37 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       orElse: () => <CategoryModel>[],
     );
 
+    // Initial category sync if passed via URL/Router
+    if (!_initializedCategory && widget.initialCategory != null && serviceCategories.isNotEmpty) {
+      final match = serviceCategories.firstWhere(
+        (c) => c.name.toLowerCase() == widget.initialCategory!.toLowerCase() || c.id == widget.initialCategory,
+        orElse: () => serviceCategories.first,
+      );
+      _selectedCategory = match;
+      _initializedCategory = true;
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: const RightTouchTopAppBar(),
+      backgroundColor: Colors.white,
+      appBar: const RightTouchTopAppBar(title: 'Services'),
       body: RefreshIndicator(
-        color: const Color(0xFF059669),
+        color: AppColors.primary,
         onRefresh: () async {
           ref.invalidate(serviceListProvider);
           ref.invalidate(categoryListProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 30),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 80),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header title
+              // Header title: "All Services"
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'All Home Services',
+                    'All Services',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
@@ -97,21 +105,25 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                     ),
                   ),
                   servicesAsync.maybeWhen(
-                    data: (list) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE6FDF1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${list.length} available',
-                        style: const TextStyle(
-                          color: Color(0xFF059669),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
+                    data: (list) {
+                      final filteredCount = _filterServices(list).length;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primarySoft,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.primaryBorder),
                         ),
-                      ),
-                    ),
+                        child: Text(
+                          '$filteredCount available',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      );
+                    },
                     orElse: () => const SizedBox.shrink(),
                   ),
                 ],
@@ -126,7 +138,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                     children: [
                       _buildCategoryChip('All Services', null),
                       for (final cat in serviceCategories)
-                        _buildCategoryChip(cat.name, cat.name),
+                        _buildCategoryChip(cat.name, cat),
                     ],
                   ),
                 ),
@@ -135,29 +147,79 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
               // Services List
               servicesAsync.when(
-                data: (services) {
-                  if (services.isEmpty) {
+                data: (allServices) {
+                  final filtered = _filterServices(allServices);
+
+                  if (filtered.isEmpty) {
                     return _buildEmptyState();
                   }
 
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 14,
-                      mainAxisExtent: 310,
-                    ),
-                    itemCount: services.length,
-                    itemBuilder: (_, i) {
-                      final s = services[i];
-                      return ApplianceServiceItemCard(
-                        service: s,
-                        onTap: () => context.push('/service/${s.id}'),
-                        onBook: () => _bookService(s),
-                      );
-                    },
+                  // Show initial 10 services or all if expanded
+                  final displayList = (_showAll || filtered.length <= 10)
+                      ? filtered
+                      : filtered.take(10).toList();
+
+                  return Column(
+                    children: [
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 14,
+                          mainAxisExtent: 310,
+                        ),
+                        itemCount: displayList.length,
+                        itemBuilder: (_, i) {
+                          final s = displayList[i];
+                          return ApplianceServiceItemCard(
+                            service: s,
+                            showTopBadge: false, // Took out top service badge on services page
+                            onTap: () => context.push('/service/${s.id}'),
+                            onBook: () => _bookService(s),
+                          );
+                        },
+                      ),
+
+                      // Read More button for services exceeding 10
+                      if (!_showAll && filtered.length > 10) ...[
+                        const SizedBox(height: 18),
+                        Center(
+                          child: InkWell(
+                            onTap: () => setState(() => _showAll = true),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySoft,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.primary, width: 1.5),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Read More (${filtered.length - 10} more)',
+                                    style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   );
                 },
                 loading: () => const CardGridShimmer(count: 6),
@@ -170,18 +232,49 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     );
   }
 
-  Widget _buildCategoryChip(String label, String? cat) {
-    final isSelected = _selectedCategory == cat;
+  List<ServiceModel> _filterServices(List<ServiceModel> list) {
+    if (_selectedCategory == null) return list;
+
+    final targetId = _selectedCategory!.id;
+    final targetName = _selectedCategory!.name.toLowerCase().trim();
+
+    return list.where((s) {
+      // 1. Category ID match
+      if (s.categoryId == targetId) return true;
+
+      // 2. Category Name match
+      if (s.categoryName?.toLowerCase().trim() == targetName) return true;
+
+      // 3. Service Name or Description contains Category name
+      final sName = s.name.toLowerCase();
+      final sDesc = (s.description ?? '').toLowerCase();
+      if (sName.contains(targetName) || sDesc.contains(targetName)) return true;
+
+      // 4. Significant keyword matching
+      final parts = targetName.split(' ');
+      for (final p in parts) {
+        if (p.length >= 3 && (sName.contains(p) || sDesc.contains(p))) {
+          return true;
+        }
+      }
+
+      return false;
+    }).toList();
+  }
+
+  Widget _buildCategoryChip(String label, CategoryModel? cat) {
+    final isSelected = _selectedCategory?.id == cat?.id;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
         label: Text(label),
         selected: isSelected,
         onSelected: (_) => _selectCategory(cat),
-        selectedColor: const Color(0xFF059669),
+        selectedColor: AppColors.primary,
         backgroundColor: Colors.white,
         side: BorderSide(
-          color: isSelected ? const Color(0xFF059669) : const Color(0xFFE2E8F0),
+          color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+          width: isSelected ? 1.5 : 1.0,
         ),
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : const Color(0xFF475569),
@@ -235,7 +328,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           ElevatedButton(
             onPressed: () => _selectCategory(null),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),

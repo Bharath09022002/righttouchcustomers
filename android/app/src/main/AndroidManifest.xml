@@ -4,9 +4,10 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
-        android:label="righttouch"
+        android:label="RightTouch"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:allowBackup="false"
         android:usesCleartextTraffic="true"
         android:enableOnBackInvokedCallback="true">
@@ -30,6 +31,22 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <!-- Deep linking: Custom Scheme (e.g. righttouch://service/...) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="righttouch" />
+            </intent-filter>
+
+            <!-- Deep linking: App Links (e.g. https://righttouch.app/...) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="righttouch.app" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

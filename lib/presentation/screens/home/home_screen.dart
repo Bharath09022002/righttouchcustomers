@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../providers/providers.dart';
 import '../../widgets/right_touch_header.dart';
+import '../../../core/widgets/app_image.dart';
 import '../../../data/models/models.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -22,8 +23,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-      appBar: const RightTouchTopAppBar(),
+      backgroundColor: Colors.white,
+      appBar: const RightTouchTopAppBar(isHome: true),
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
@@ -36,47 +37,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
-              // 1. SEARCH BAR
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: InkWell(
-                  onTap: () => context.push('/search'),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.search, color: Color(0xFF64748B), size: 20),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Search for AC repair, plumbing, Cleaning...',
-                            style: TextStyle(
-                              color: Color(0xFF94A3B8),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // 2. DELIVER TO ADDRESS ROW
+              // 1. DELIVER TO ADDRESS ROW
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: InkWell(
@@ -107,7 +70,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           child: const Icon(
                             Icons.location_on_outlined,
-                            color: Color(0xFF059669),
+                            color: Color(0xFF16A34A),
                             size: 18,
                           ),
                         ),
@@ -128,7 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Text(
                                 selectedAddress?.line.isNotEmpty == true
                                     ? selectedAddress!.line
-                                    : '123 Main St, Near Bus Stand, Coimbatore',
+                                    : 'Select delivery address',
                                 style: TextStyle(
                                   color: isDark ? Colors.white : const Color(0xFF0F172A),
                                   fontSize: 13,
@@ -150,10 +113,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
 
-              const SizedBox(height: 16),
-
-              // 3. HERO DEMAND BANNER
+              // 2. HERO DEMAND BANNER
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildHeroCard(context),
@@ -182,7 +144,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             const TextSpan(
                               text: 'Home Services',
-                              style: TextStyle(color: Color(0xFF059669)),
+                              style: TextStyle(color: Color(0xFF16A34A)),
                             ),
                           ],
                         ),
@@ -195,7 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           Text(
                             'View All',
                             style: TextStyle(
-                              color: Color(0xFF059669),
+                              color: Color(0xFF16A34A),
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
@@ -203,7 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           SizedBox(width: 2),
                           Icon(
                             Icons.arrow_forward_rounded,
-                            color: Color(0xFF059669),
+                            color: Color(0xFF16A34A),
                             size: 15,
                           ),
                         ],
@@ -250,8 +212,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
                           ),
                           const TextSpan(
-                            text: 'Richt Touch?',
-                            style: TextStyle(color: Color(0xFF059669)),
+                            text: 'RightTouch?',
+                            style: TextStyle(color: Color(0xFF16A34A)),
                           ),
                         ],
                       ),
@@ -329,8 +291,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 14),
 
                 // Headline + Subtitle
+                // Top Section: Headline + Subtitle on left, Technician on right
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       flex: 6,
@@ -352,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                                 TextSpan(
                                   text: 'Repair ',
-                                  style: TextStyle(color: Color(0xFF10B981)),
+                                  style: TextStyle(color: Color(0xFF22C55E)),
                                 ),
                                 TextSpan(
                                   text: '&\n',
@@ -360,10 +323,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                                 TextSpan(
                                   text: 'Services ',
-                                  style: TextStyle(color: Color(0xFF10B981)),
+                                  style: TextStyle(color: Color(0xFF22C55E)),
                                 ),
                                 TextSpan(
-                                  text: 'On Demand',
+                                  text: 'On\nDemand',
                                   style: TextStyle(color: Colors.white),
                                 ),
                               ],
@@ -374,80 +337,79 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             'Expert technicians for AC, appliances, plumbing & more. Book in minutes — get peace of mind.',
                             style: TextStyle(
                               color: Color(0xFF94A3B8),
-                              fontSize: 11,
+                              fontSize: 11.5,
                               height: 1.35,
                             ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // CTAs: Book Now -> | Explore Services
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              InkWell(
-                                onTap: () => context.push('/services'),
-                                borderRadius: BorderRadius.circular(20),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF059669),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: const [
-                                      Text(
-                                        'Book Now',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 13),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              InkWell(
-                                onTap: () => context.push('/services'),
-                                borderRadius: BorderRadius.circular(20),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                                  ),
-                                  child: const Text(
-                                    'Explore Services',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
                     ),
-                    // Technician Illustration
+                    const SizedBox(width: 10),
+                    // Technician Illustration (lightly bigger)
                     Expanded(
                       flex: 4,
                       child: Align(
                         alignment: Alignment.centerRight,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            'assets/images/technician_hero.jpg',
-                            height: 155,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) => const SizedBox(height: 140),
+                        child: const AppImage(
+                          url: 'assets/images/technician_hero.jpg',
+                          height: 170,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 14),
+
+                // CTAs: Book Now -> and Explore Services side by side on the left (No overflow)
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    InkWell(
+                      onTap: () => context.push('/services'),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Text(
+                              'Book Now',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 13),
+                          ],
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => context.push('/services'),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8.5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                        ),
+                        child: const Text(
+                          'Explore Services',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -512,7 +474,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           width: 24,
           height: 24,
           decoration: const BoxDecoration(
-            color: Color(0xFF059669),
+            color: Color(0xFF16A34A),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: Colors.white, size: 14),
@@ -580,19 +542,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         categoryIdMatch: 'electr',
       ),
       _HomeServiceItem(
-        title: 'Painting\nServices',
-        icon: Icons.format_paint_outlined,
-        categoryIdMatch: 'paint',
-      ),
-      _HomeServiceItem(
-        title: 'Carpentry\nServices',
-        icon: Icons.chair_outlined,
-        categoryIdMatch: 'carpent',
-      ),
-      _HomeServiceItem(
-        title: 'Cleaning\nServices',
-        icon: Icons.cleaning_services_outlined,
-        categoryIdMatch: 'clean',
+        title: 'Solar\nServices',
+        icon: Icons.solar_power_outlined,
+        categoryIdMatch: 'solar',
       ),
       _HomeServiceItem(
         title: 'Security &\nSurveillance',
@@ -606,10 +558,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: services.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+        crossAxisCount: 3,
         mainAxisSpacing: 10,
-        crossAxisSpacing: 8,
-        childAspectRatio: 0.74,
+        crossAxisSpacing: 10,
+        childAspectRatio: 1.05,
       ),
       itemBuilder: (context, index) {
         final item = services[index];
@@ -648,7 +600,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Icon(
                   item.icon,
-                  color: const Color(0xFF059669),
+                  color: const Color(0xFF16A34A),
                   size: 24,
                 ),
                 const SizedBox(height: 4),
@@ -716,7 +668,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             TextSpan(
                               text: '20% OFF\n',
-                              style: TextStyle(fontSize: 20, color: Color(0xFF059669)),
+                              style: TextStyle(fontSize: 20, color: Color(0xFF16A34A)),
                             ),
                             TextSpan(
                               text: 'On AC Service',
@@ -741,7 +693,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF059669),
+                            color: const Color(0xFF16A34A),
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: FittedBox(
@@ -769,14 +721,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 Expanded(
                   flex: 5,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      'assets/images/ac_banner.jpg',
-                      height: 100,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox(height: 80),
-                    ),
+                  child: const AppImage(
+                    url: 'assets/images/ac_banner.jpg',
+                    height: 100,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ],
@@ -843,7 +791,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: Color(0xFFECFDF5),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: const Color(0xFF059669), size: 14),
+            child: Icon(icon, color: const Color(0xFF16A34A), size: 14),
           ),
           const SizedBox(width: 5),
           Expanded(

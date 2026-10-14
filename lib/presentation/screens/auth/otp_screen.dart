@@ -222,12 +222,26 @@ class _S extends ConsumerState<OtpScreen> {
                   ),
                   if (_err != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Center(
-                        child: Text(_err!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                color: AppColors.danger, fontSize: 13)),
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.primary, width: 1.2),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _err!,
+                                style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   const SizedBox(height: 24),

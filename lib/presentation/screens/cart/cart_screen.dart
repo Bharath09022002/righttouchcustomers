@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/ui.dart';
+import '../../../core/widgets/app_image.dart';
+import '../../../core/ui/app_feedback.dart';
 import '../../../core/utils/format.dart';
 import '../../providers/providers.dart';
 
@@ -37,20 +39,11 @@ class CartScreen extends ConsumerWidget {
                       child: Row(
                         children: [
                           if (it.image != null && it.image!.isNotEmpty) ...[
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                it.image!,
-                                width: 56,
-                                height: 56,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  width: 56,
-                                  height: 56,
-                                  color: const Color(0xFFF1F5F9),
-                                  child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF94A3B8)),
-                                ),
-                              ),
+                            AppImage(
+                              url: it.image!,
+                              width: 56,
+                              height: 56,
+                              radius: BorderRadius.circular(8),
                             ),
                             const SizedBox(width: 12),
                           ],
@@ -79,8 +72,19 @@ class CartScreen extends ConsumerWidget {
                               IconButton(
                                 icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444), size: 20),
                                 onPressed: () async {
-                                  await ref.read(cartRepoProvider).remove(it.id);
-                                  ref.invalidate(cartProvider);
+                                  try {
+                                    await ref.read(cartRepoProvider).remove(it.id);
+                                    ref.invalidate(cartProvider);
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      final appErr = mapException(e);
+                                      showError(
+                                        context,
+                                        title: 'Failed to Remove',
+                                        message: appErr.userMessage,
+                                      );
+                                    }
+                                  }
                                 },
                               ),
                             ],
@@ -112,7 +116,7 @@ class CartScreen extends ConsumerWidget {
                     Row(children: [
                       const Text('Total', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                       const Spacer(),
-                      Text(inr(total), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF059669))),
+                      Text(inr(total), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF16A34A))),
                     ]),
                     const SizedBox(height: 12),
                     AppButton(
@@ -126,7 +130,7 @@ class CartScreen extends ConsumerWidget {
             ),
           ]);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: RtLoader()),
         error: (e, _) => ErrorView(message: '$e', onRetry: () => ref.invalidate(cartProvider)),
       ),
     );

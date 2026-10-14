@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/ui/app_feedback.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../providers/providers.dart';
 
 class SlotBookingScreen extends ConsumerStatefulWidget {
@@ -35,13 +34,21 @@ class _S extends ConsumerState<SlotBookingScreen> {
     }
     setState(() => _busy = true);
     try {
+      String? resolvedDate;
+      if (_type == 'scheduled' && _date != null) {
+        final now = DateTime.now();
+        final dt = _date == 'Tomorrow'
+            ? now.add(const Duration(days: 1))
+            : (_date == 'Day after' ? now.add(const Duration(days: 2)) : now);
+        resolvedDate = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+      }
       await ref.read(bookingRepoProvider).schedule({
         'serviceId': widget.serviceId,
         'latitude': addr.lat,
         'longitude': addr.lng,
         'bookingType': _type,
         'addressId': addr.id,
-        if (_date != null) 'date': _date,
+        if (resolvedDate != null) 'date': resolvedDate,
         if (_time != null) 'slot': _time,
       });
       ref.invalidate(myBookingsProvider);
@@ -68,12 +75,45 @@ class _S extends ConsumerState<SlotBookingScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Schedule service')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
+        // Trust & Guarantee Strip
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFBBF7D0)),
+          ),
+          child: Row(
+            children: const [
+              Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '30-Day Service Guarantee • Free re-visit if unsatisfied',
+                  style: TextStyle(
+                    color: Color(0xFF15803D),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         const Text('Booking type', style: TextStyle(fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
         Row(children: [
           Expanded(
             child: ChoiceChip(
-              label: const Text('Instant'),
+              label: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.bolt_rounded, size: 16, color: Color(0xFFF59E0B)),
+                  SizedBox(width: 4),
+                  Text('Instant (2 hrs)'),
+                ],
+              ),
               selected: _type == 'instant',
               onSelected: (_) => setState(() => _type = 'instant'),
             ),
@@ -81,7 +121,14 @@ class _S extends ConsumerState<SlotBookingScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: ChoiceChip(
-              label: const Text('Scheduled'),
+              label: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.calendar_today_rounded, size: 14),
+                  SizedBox(width: 4),
+                  Text('Schedule slot'),
+                ],
+              ),
               selected: _type == 'scheduled',
               onSelected: (_) => setState(() => _type = 'scheduled'),
             ),
@@ -102,7 +149,6 @@ class _S extends ConsumerState<SlotBookingScreen> {
             spacing: 8,
             children: _times.map((t) => ChoiceChip(label: Text(t), selected: _time == t, onSelected: (_) => setState(() => _time = t))).toList(),
           ),
-          const Text('Slots API: GET /api/user/booking/slots', style: TextStyle(color: AppColors.grey400, fontSize: 11)),
         ],
         const SizedBox(height: 16),
         Row(children: [
@@ -115,19 +161,26 @@ class _S extends ConsumerState<SlotBookingScreen> {
               return Card(child: ListTile(title: const Text('No address saved'), subtitle: const Text('Add your home address to check serviceability'), trailing: const Icon(Icons.add), onTap: () => context.push('/add-address')));
             }
             final cur = sel ?? list.firstWhere((a) => a.isDefault, orElse: () => list.first);
-            return Column(
-              children: list.map((a) => Card(
-                child: RadioListTile(
-                  value: a.id,
-                  groupValue: cur.id,
-                  title: Text('${a.type} • ${a.line}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                  subtitle: Text('${a.city} ${a.pincode}'),
-                  onChanged: (_) => ref.read(selectedAddressProvider.notifier).state = a,
-                ),
-              )).toList(),
+            return RadioGroup<String>(
+              groupValue: cur.id,
+              onChanged: (id) {
+                if (id != null) {
+                  final picked = list.firstWhere((a) => a.id == id, orElse: () => list.first);
+                  ref.read(selectedAddressProvider.notifier).state = picked;
+                }
+              },
+              child: Column(
+                children: list.map((a) => Card(
+                  child: RadioListTile<String>(
+                    value: a.id,
+                    title: Text('${a.type} • ${a.line}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                    subtitle: Text('${a.city} ${a.pincode}'),
+                  ),
+                )).toList(),
+              ),
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: RtLoader()),
           error: (e, _) => Text('$e'),
         ),
         const SizedBox(height: 90),

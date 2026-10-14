@@ -105,7 +105,7 @@ class _S extends ConsumerState<SearchScreen> {
                 ),
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: RtLoader()),
             error: (e, _) => ErrorView(message: '$e', onRetry: () => ref.invalidate(serviceListProvider)),
           ),
         ),

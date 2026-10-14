@@ -95,6 +95,15 @@ class CategoryModel {
           : 0,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    '_id': id,
+    'name': name,
+    'image': image,
+    'description': description,
+    'type': type,
+    'serviceCount': serviceCount,
+  };
 }
 
 class ServiceModel {

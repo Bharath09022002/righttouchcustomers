@@ -14,12 +14,12 @@ class PaymentsScreen extends ConsumerWidget {
     final summaryAsync = ref.watch(paymentSummaryProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Payments & Invoices', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
       ),
       body: RefreshIndicator(
-        color: const Color(0xFF059669),
+        color: const Color(0xFF16A34A),
         onRefresh: () async {
           ref.invalidate(paymentListProvider);
           ref.invalidate(paymentSummaryProvider);
@@ -46,7 +46,7 @@ class PaymentsScreen extends ConsumerWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem('Total Paid', inr(paid), const Color(0xFF059669)),
+                      _buildStatItem('Total Paid', inr(paid), const Color(0xFF16A34A)),
                       Container(width: 1, height: 36, color: const Color(0xFFE2E8F0)),
                       _buildStatItem('Pending', inr(pending), const Color(0xFFD97706)),
                       Container(width: 1, height: 36, color: const Color(0xFFE2E8F0)),
@@ -104,7 +104,7 @@ class PaymentsScreen extends ConsumerWidget {
                             ),
                             child: Icon(
                               isPaid ? Icons.check_circle_outlined : Icons.schedule,
-                              color: isPaid ? const Color(0xFF059669) : const Color(0xFFD97706),
+                              color: isPaid ? const Color(0xFF16A34A) : const Color(0xFFD97706),
                               size: 22,
                             ),
                           ),
@@ -174,7 +174,7 @@ class PaymentsScreen extends ConsumerWidget {
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w800,
-                                        color: Color(0xFF059669),
+                                        color: Color(0xFF16A34A),
                                       ),
                                     ),
                                   ),
@@ -188,7 +188,7 @@ class PaymentsScreen extends ConsumerWidget {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF059669))),
+              loading: () => const Center(child: RtLoader()),
               error: (e, _) => ErrorView(message: '$e', onRetry: () => ref.invalidate(paymentListProvider)),
             ),
           ],

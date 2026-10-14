@@ -18,6 +18,16 @@ class _S extends ConsumerState<CheckoutScreen> {
   bool _busy = false;
 
   Future<void> _payNow() async {
+    if (ref.read(authProvider).isGuest) {
+      showError(
+        context,
+        title: 'Sign In Required',
+        message: 'Please sign in to complete payment and confirm this booking.',
+        actionLabel: 'Sign In',
+        onAction: () => context.push('/login'),
+      );
+      return;
+    }
     final addr = ref.read(selectedAddressProvider);
     if (addr == null) {
       showError(
@@ -106,18 +116,18 @@ class _S extends ConsumerState<CheckoutScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFECACA)),
+                        border: Border.all(color: AppColors.primary, width: 1.2),
                       ),
                       child: Row(
                         children: const [
-                          Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 18),
+                          Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 18),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'No address selected. Tap Select above to choose delivery location.',
-                              style: TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w600),
+                              style: TextStyle(color: Color(0xFF0F172A), fontSize: 12, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ],
@@ -134,26 +144,28 @@ class _S extends ConsumerState<CheckoutScreen> {
           const Text('Payment Method', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
           const SizedBox(height: 8),
           Card(
-            child: Column(
-              children: [
-                RadioListTile<String>(
-                  value: 'online',
-                  groupValue: _pay,
-                  activeColor: AppColors.primary,
-                  title: const Text('Online Payment (UPI / Cards / NetBanking)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                  subtitle: const Text('Fast & secure doorstep instant payment', style: TextStyle(fontSize: 12, color: AppColors.grey600)),
-                  onChanged: (v) => setState(() => _pay = v!),
-                ),
-                const Divider(height: 1),
-                RadioListTile<String>(
-                  value: 'cash',
-                  groupValue: _pay,
-                  activeColor: AppColors.primary,
-                  title: const Text('Pay After Service (Cash / QR)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                  subtitle: const Text('Pay technician directly once job is completed', style: TextStyle(fontSize: 12, color: AppColors.grey600)),
-                  onChanged: (v) => setState(() => _pay = v!),
-                ),
-              ],
+            child: RadioGroup<String>(
+              groupValue: _pay,
+              onChanged: (v) {
+                if (v != null) setState(() => _pay = v);
+              },
+              child: Column(
+                children: const [
+                  RadioListTile<String>(
+                    value: 'online',
+                    activeColor: AppColors.primary,
+                    title: Text('Online Payment (UPI / Cards / NetBanking)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    subtitle: Text('Fast & secure doorstep instant payment', style: TextStyle(fontSize: 12, color: AppColors.grey600)),
+                  ),
+                  Divider(height: 1),
+                  RadioListTile<String>(
+                    value: 'cash',
+                    activeColor: AppColors.primary,
+                    title: Text('Pay After Service (Cash / QR)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    subtitle: Text('Pay technician directly once job is completed', style: TextStyle(fontSize: 12, color: AppColors.grey600)),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 14),
@@ -207,7 +219,7 @@ class _S extends ConsumerState<CheckoutScreen> {
                 ),
               ),
             ),
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
+            loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: RtLoader())),
             error: (e, _) => Text('$e'),
           ),
         ],

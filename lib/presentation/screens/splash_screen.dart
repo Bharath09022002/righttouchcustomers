@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/widgets/brand.dart';
+import '../../widgets/rt_loader.dart';
 import '../providers/providers.dart';
 
 /// Figma splash: centered brand lockup with a proper loading state
@@ -89,15 +89,7 @@ class _S extends ConsumerState<SplashScreen>
               child: const BrandLogo(width: 200),
             ),
             const SizedBox(height: 28),
-            const SizedBox(
-              width: 90,
-              child: LinearProgressIndicator(
-                color: AppColors.primary,
-                backgroundColor: AppColors.primarySoft,
-                minHeight: 3,
-                borderRadius: BorderRadius.all(Radius.circular(4)),
-              ),
-            ),
+            const RtLoader(size: 32),
           ],
         ),
       ),

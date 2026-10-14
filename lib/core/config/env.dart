@@ -4,7 +4,7 @@
 class Env {
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'http://localhost:7372',
+    defaultValue: 'https://righttouch-backend-fn9z.onrender.com',
   );
   static const String appName = 'RightTouch';
   static const String currencySymbol = '₹';

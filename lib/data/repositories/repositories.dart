@@ -309,8 +309,12 @@ class CatalogRepository {
       if (r is ApiOk) {
         final list = _parseList(r.data, (e) => CategoryModel.fromJson(e));
         if (list.isNotEmpty) return list;
+      } else if (kDebugMode && r is ApiErr) {
+        debugPrint('[CatalogRepository] categories error: ${r.message} (${r.statusCode})');
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('[CatalogRepository] categories exception: $e');
+    }
     return fallbackCategories;
   }
 
@@ -327,8 +331,12 @@ class CatalogRepository {
           }
           return (items, prompt);
         }
+      } else if (kDebugMode && r is ApiErr) {
+        debugPrint('[CatalogRepository] services error: ${r.message} (${r.statusCode})');
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('[CatalogRepository] services exception: $e');
+    }
 
     var filtered = fallbackServices;
     if (categoryId != null && categoryId.isNotEmpty) {
@@ -460,8 +468,12 @@ class ProductRepository {
         if (list.isNotEmpty) {
           return _filter(list, search, categoryId);
         }
+      } else if (kDebugMode && r is ApiErr) {
+        debugPrint('[ProductRepository] products error: ${r.message} (${r.statusCode})');
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ProductRepository] products exception: $e');
+    }
     return _filter(fallbackProducts, search, categoryId);
   }
 
@@ -497,14 +509,30 @@ class BookingRepository {
   }
 
   Future<BookingModel> detail(String id) async {
-    final r = await gw.booking(id);
-    if (r is ApiOk) {
-      final d = r.data;
-      final m = asMap(d);
-      return BookingModel.fromJson(m.containsKey('booking') ? m['booking'] : d);
+    try {
+      final r = await gw.booking(id);
+      if (r is ApiOk) {
+        final d = r.data;
+        final m = asMap(d);
+        return BookingModel.fromJson(m.containsKey('booking') ? m['booking'] : d);
+      }
+      if (r is ApiErr) {
+        // Fallback: if getBookingById restricts to Admin/Owner, get from customer bookings
+        final myB = await myBookings().catchError((_) => <BookingModel>[]);
+        final found = myB.where((b) => b.id == id).firstOrNull;
+        if (found != null) return found;
+        throw ApiException(r.message);
+      }
+    } catch (e) {
+      final myB = await myBookings().catchError((_) => <BookingModel>[]);
+      final found = myB.where((b) => b.id == id).firstOrNull;
+      if (found != null) return found;
+      rethrow;
     }
-    if (r is ApiErr) throw ApiException(r.message);
-    throw ApiException('Unexpected response');
+    final myB = await myBookings().catchError((_) => <BookingModel>[]);
+    final found = myB.where((b) => b.id == id).firstOrNull;
+    if (found != null) return found;
+    throw ApiException('Booking not found');
   }
 
   Future<void> schedule(Map<String, dynamic> b) async {
@@ -696,6 +724,23 @@ class SupportRepository {
     return 0;
   }
 
+  Future<QuotationModel> quotationDetail(String id) async {
+    final r = await gw.quotation(id);
+    if (r is ApiOk) {
+      final d = r.data;
+      final m = asMap(d);
+      return QuotationModel.fromJson(m.containsKey('quotation') ? m['quotation'] : d);
+    }
+    if (r is ApiErr) throw ApiException(r.message);
+    throw ApiException('Could not load quotation');
+  }
+
+  Future<void> viewQuotation(String id) async {
+    try {
+      await gw.quotationView(id);
+    } catch (_) {}
+  }
+
   Future<void> acceptQuote(String id) async {
     final r = await gw.quotationAccept(id);
     if (r is ApiErr) throw ApiException(r.message);
@@ -724,9 +769,16 @@ class SupportRepository {
       final r = await gw.reportCategories();
       if (r is ApiOk) {
         final d = r.data;
-        if (d is List) return d.map((e) => e.toString()).toList();
-        if (d is Map && d['categories'] is List) {
-          return (d['categories'] as List).map((e) => e.toString()).toList();
+        List rawList = [];
+        if (d is List) rawList = d;
+        if (d is Map && d['categories'] is List) rawList = d['categories'];
+        if (rawList.isNotEmpty) {
+          return rawList.map<String>((e) {
+            if (e is Map) {
+              return (e['label'] ?? e['name'] ?? e['title'] ?? e['key'] ?? 'Other').toString();
+            }
+            return e.toString();
+          }).toList();
         }
       }
     } catch (_) {}

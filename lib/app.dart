@@ -12,6 +12,7 @@ class RightTouchApp extends ConsumerWidget {
       title: 'RightTouch',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      darkTheme: AppTheme.light(),
       themeMode: ThemeMode.light,
       routerConfig: router,
     );

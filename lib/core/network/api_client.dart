@@ -86,8 +86,12 @@ class ApiClient {
                 final clonedResponse = await dio.fetch(retryOpts);
                 return handler.resolve(clonedResponse);
               }
-            } catch (_) {
-              await tokens.clear();
+            } catch (err) {
+              if (err is DioException &&
+                  (err.response?.statusCode == 401 ||
+                      err.response?.statusCode == 403)) {
+                await tokens.clear();
+              }
             }
           }
         }
@@ -246,9 +250,9 @@ class ApiClient {
     }
   }
 
-  Future<ApiResult<dynamic>> delete(String path, [dynamic body]) async {
+  Future<ApiResult<dynamic>> delete(String path, [dynamic body, Map<String, dynamic>? query]) async {
     try {
-      final res = await dio.delete(path, data: body);
+      final res = await dio.delete(path, data: body, queryParameters: query);
       return ApiOk(_unwrap(res));
     } on DioException catch (e) {
       return _err(e);
