@@ -18,4 +18,8 @@ class Env {
 
   /// Threshold for showing "server waking up" message.
   static const Duration wakeUpThreshold = Duration(seconds: 8);
+
+  /// Support contact information
+  static const String supportPhone = '+91 98941 69716';
+  static const String supportEmail = '<SUPPORT_EMAIL>';
 }

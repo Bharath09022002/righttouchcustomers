@@ -65,7 +65,7 @@ class ProfileScreen extends ConsumerWidget {
           _buildSectionHeader(
             title: 'Account & Preferences',
             subtitle: 'Manage your account settings',
-            onViewAll: () => context.push('/addresses'),
+            onViewAll: () => context.push('/account-settings'),
           ),
           const SizedBox(height: 10),
           _buildCardGroup(
@@ -108,7 +108,7 @@ class ProfileScreen extends ConsumerWidget {
           _buildSectionHeader(
             title: 'Support & Legal',
             subtitle: "We're here to help you 24/7",
-            onViewAll: () => context.push('/reports'),
+            onViewAll: () => context.push('/support-legal'),
           ),
           const SizedBox(height: 10),
           _buildCardGroup(
@@ -126,7 +126,7 @@ class ProfileScreen extends ConsumerWidget {
                 icon: Icons.verified_user_outlined,
                 title: 'RightTouch Guarantee & Warranty',
                 subtitle: '30-Day doorstep re-service coverage',
-                onTap: () => _showWarrantyModal(context),
+                onTap: () => context.push('/warranty-info'),
               ),
             ],
           ),

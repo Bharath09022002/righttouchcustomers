@@ -25,6 +25,9 @@ import '../../presentation/screens/products/product_quotations_screen.dart';
 import '../../presentation/screens/support/notifications_screen.dart';
 import '../../presentation/screens/support/reports_screen.dart';
 import '../../presentation/screens/profile/edit_profile_screen.dart';
+import '../../presentation/screens/profile/account_settings_screen.dart';
+import '../../presentation/screens/profile/support_legal_screen.dart';
+import '../../presentation/screens/profile/warranty_info_screen.dart';
 import '../../presentation/screens/products/products_screen.dart';
 import '../../presentation/screens/products/product_detail_screen.dart';
 import '../../presentation/screens/services/services_screen.dart';
@@ -125,6 +128,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
       GoRoute(path: '/edit-profile', builder: (_, __) => const EditProfileScreen()),
+      GoRoute(path: '/account-settings', builder: (_, __) => const AccountSettingsScreen()),
+      GoRoute(path: '/support-legal', builder: (_, __) => const SupportLegalScreen()),
+      GoRoute(path: '/warranty-info', builder: (_, __) => const WarrantyInfoScreen()),
     ],
   );
 });
