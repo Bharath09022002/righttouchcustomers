@@ -74,6 +74,71 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(ServiceDetailScreen), findsOneWidget);
     });
+
+    testWidgets('Empty inclusions/exclusions/faqs: does not render section headers when API data is empty', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final emptyService = createFakeService(
+        id: 'svc_empty',
+        name: 'Basic Service',
+        whatIncluded: [],
+        whatNotIncluded: [],
+        frequentlyAskedQuestions: [],
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          screen: const ServiceDetailScreen(id: 'svc_empty'),
+          route: '/service/svc_empty',
+          overrides: [
+            ...createDefaultOverrides(),
+            serviceDetailProvider.overrideWith((ref, id) async => emptyService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Service Included'), findsNothing);
+      expect(find.text('Service does not include'), findsNothing);
+      expect(find.text('Frequently Asked Questions'), findsNothing);
+    });
+
+    testWidgets('Populated inclusions/exclusions/faqs: renders section headers and items when present', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final populatedService = createFakeService(
+        id: 'svc_pop',
+        name: 'Inverter Checkup',
+        whatIncluded: ['Voltage test'],
+        whatNotIncluded: ['Component replacement'],
+        frequentlyAskedQuestions: ['How long does it take? Around 2 hours.'],
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          screen: const ServiceDetailScreen(id: 'svc_pop'),
+          route: '/service/svc_pop',
+          overrides: [
+            ...createDefaultOverrides(),
+            serviceDetailProvider.overrideWith((ref, id) async => populatedService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Service Included'), findsOneWidget);
+      expect(find.text('Voltage test'), findsOneWidget);
+      expect(find.text('Service does not include'), findsOneWidget);
+      expect(find.text('Component replacement'), findsOneWidget);
+      expect(find.text('Frequently Asked Questions'), findsOneWidget);
+      expect(find.text('How long does it take?'), findsOneWidget);
+    });
   });
 
   group('CartScreen Widget & Viewport Tests', () {

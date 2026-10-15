@@ -44,70 +44,6 @@ class _ServiceDetailScreenState extends ConsumerState<ServiceDetailScreen> {
     super.dispose();
   }
 
-  // Fallback defaults matching screenshots if backend list is empty
-  static const List<String> _defaultIncluded = [
-    'Complete hybrid inverter inspection',
-    'External and internal dust cleaning (where accessible)',
-    'Battery charging and discharging performance check',
-    'Battery terminal inspection',
-    'Solar PV input verification',
-    'DC input voltage testing',
-    'AC output voltage testing',
-    'Grid synchronization check',
-    'MPPT performance inspection',
-    'Display and control panel testing',
-    'Minor tightening of electrical connections',
-    'Final performance testing',
-  ];
-
-  static const List<String> _defaultNotIncluded = [
-    'Inverter PCB replacement',
-    'Battery replacement',
-    'Power module replacement',
-    'Display replacement',
-    'Charge controller replacement',
-    'Complete inverter replacement',
-    'ACDB/DCDB replacement',
-    'Cable replacement',
-    'Firmware upgrade requiring manufacturer support',
-    'Spare parts cost',
-  ];
-
-  static const List<String> _defaultNotes = [
-    'Suitable for all major hybrid inverter brands',
-    'Improves inverter and battery performance',
-    'Preventive maintenance service',
-    'Reduces unexpected system failures',
-    'Safe electrical inspection',
-  ];
-
-  static const List<Map<String, String>> _defaultFaqs = [
-    {
-      'question': 'Do I need to provide any cleaning supplies or equipment?',
-      'answer': 'No, our certified professionals arrive fully equipped with professional diagnostic meters, cleaning supplies, and safety gear.',
-    },
-    {
-      'question': 'Can I reschedule or cancel my cleaning service?',
-      'answer': 'Yes, you can reschedule or cancel free of charge up to 4 hours before your scheduled appointment time.',
-    },
-    {
-      'question': 'Will the cleaners move furniture while cleaning?',
-      'answer': 'Our technicians only move light obstructions necessary to reach and safely inspect the inverter and wiring panels.',
-    },
-    {
-      'question': 'What is included in deep cleaning service?',
-      'answer': 'Deep dust extraction, heat-sink de-clogging, connection tightening, battery terminal cleaning, and full diagnostic tests.',
-    },
-    {
-      'question': 'How long does the service take?',
-      'answer': 'Service typically takes 1.5 to 3 hours depending on your inverter capacity and system configuration.',
-    },
-    {
-      'question': 'Is there any warranty on the service?',
-      'answer': 'Yes, RightTouch provides a 30-day service warranty on all workmanship and inspection checks.',
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     final d = ref.watch(serviceDetailProvider(widget.id));
@@ -122,22 +58,23 @@ class _ServiceDetailScreenState extends ConsumerState<ServiceDetailScreen> {
       ),
       child: d.when(
         data: (s) {
-          final included = s.whatIncluded.isNotEmpty ? s.whatIncluded : _defaultIncluded;
-          final notIncluded = s.whatNotIncluded.isNotEmpty ? s.whatNotIncluded : _defaultNotIncluded;
-          final notes = s.serviceHighlights.isNotEmpty ? s.serviceHighlights : _defaultNotes;
+          final included = s.whatIncluded;
+          final notIncluded = s.whatNotIncluded;
+          final notes = s.serviceHighlights;
 
-          final faqs = s.frequentlyAskedQuestions.isNotEmpty
-              ? s.frequentlyAskedQuestions.map((q) {
-                  final parts = q.split('?');
-                  if (parts.length > 1) {
-                    return {
-                      'question': '${parts[0].trim()}?',
-                      'answer': parts.sublist(1).join('?').trim(),
-                    };
-                  }
-                  return {'question': q, 'answer': 'Please contact customer support for specific details regarding this query.'};
-                }).toList()
-              : _defaultFaqs;
+          final faqs = s.frequentlyAskedQuestions.map((q) {
+            final parts = q.split('?');
+            if (parts.length > 1) {
+              return {
+                'question': '${parts[0].trim()}?',
+                'answer': parts.sublist(1).join('?').trim(),
+              };
+            }
+            return {
+              'question': q,
+              'answer': 'Please contact customer support for specific details regarding this query.',
+            };
+          }).toList();
 
           final displayedFaqs = _showAllFaqs ? faqs : faqs.take(4).toList();
 
@@ -216,245 +153,263 @@ class _ServiceDetailScreenState extends ConsumerState<ServiceDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(
-                                  '₹${s.price?.toInt() ?? 1499}',
-                                  style: const TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFF0F172A),
-                                    letterSpacing: -0.5,
+                                if (s.price != null && s.price! > 0)
+                                  Text(
+                                    '₹${s.price!.toInt()}',
+                                    style: const TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF0F172A),
+                                      letterSpacing: -0.5,
+                                    ),
+                                  )
+                                else
+                                  const Text(
+                                    'Price on request',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF0F172A),
+                                    ),
                                   ),
-                                ),
                                 const SizedBox(height: 2),
-                                Text(
-                                  s.durationText ??
-                                      '1.5 to 3 Hours\ndepending on inverter\ncapacity and system\nconfiguration',
-                                  textAlign: TextAlign.end,
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
-                                    color: Color(0xFF64748B),
-                                    height: 1.35,
+                                if (s.durationMin > 0)
+                                  Text(
+                                    '${s.durationMin} mins',
+                                    textAlign: TextAlign.end,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      color: Color(0xFF64748B),
+                                      height: 1.35,
+                                    ),
+                                  )
+                                else if (s.durationText != null && s.durationText!.trim().isNotEmpty)
+                                  Text(
+                                    s.durationText!,
+                                    textAlign: TextAlign.end,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      color: Color(0xFF64748B),
+                                      height: 1.35,
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 28),
-
-                      // Section 1: Service Included
-                      const Text(
-                        'Service Included',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
+                      // Section 1: Service Included (only when non-empty)
+                      if (included.isNotEmpty) ...[
+                        const SizedBox(height: 28),
+                        const Text(
+                          'Service Included',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 14),
-                      Column(
-                        children: included.map((item) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.add_circle_outline_rounded,
-                                  color: Color(0xFF00A859),
-                                  size: 21,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    item,
-                                    style: const TextStyle(
-                                      fontSize: 14.5,
-                                      color: Color(0xFF475569),
-                                      height: 1.35,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      // Section 2: Service does not include
-                      const Text(
-                        'Service does not include',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Column(
-                        children: notIncluded.map((item) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.remove_circle_outline_rounded,
-                                  color: Color(0xFFE53935),
-                                  size: 21,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    item,
-                                    style: const TextStyle(
-                                      fontSize: 14.5,
-                                      color: Color(0xFF475569),
-                                      height: 1.35,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      // Section 3: Please note
-                      const Text(
-                        'Please note',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Column(
-                        children: notes.map((item) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(
-                                  Icons.info_outline_rounded,
-                                  color: Color(0xFF64748B),
-                                  size: 21,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    item,
-                                    style: const TextStyle(
-                                      fontSize: 14.5,
-                                      color: Color(0xFF475569),
-                                      height: 1.35,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      // Section 4: Frequently Asked Questions
-                      const Text(
-                        'Frequently Asked Questions',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // FAQ Accordions
-                      Column(
-                        children: List.generate(displayedFaqs.length, (index) {
-                          final faq = displayedFaqs[index];
-                          final isExpanded = _expandedFaqIndices.contains(index);
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
-                            ),
-                            child: Theme(
-                              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                              child: ExpansionTile(
-                                key: PageStorageKey('faq_$index'),
-                                initiallyExpanded: isExpanded,
-                                onExpansionChanged: (expanded) {
-                                  setState(() {
-                                    if (expanded) {
-                                      _expandedFaqIndices.add(index);
-                                    } else {
-                                      _expandedFaqIndices.remove(index);
-                                    }
-                                  });
-                                },
-                                trailing: Icon(
-                                  isExpanded ? Icons.remove : Icons.add,
-                                  color: const Color(0xFF1E293B),
-                                  size: 20,
-                                ),
-                                tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                                title: Text(
-                                  faq['question'] ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF0F172A),
-                                  ),
-                                ),
+                        const SizedBox(height: 14),
+                        Column(
+                          children: included.map((item) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    faq['answer'] ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 13.5,
-                                      color: Color(0xFF64748B),
-                                      height: 1.45,
+                                  const Icon(
+                                    Icons.add_circle_outline_rounded,
+                                    color: Color(0xFF00A859),
+                                    size: 21,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      item,
+                                      style: const TextStyle(
+                                        fontSize: 14.5,
+                                        color: Color(0xFF475569),
+                                        height: 1.35,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          );
-                        }),
-                      ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
 
-                      const SizedBox(height: 10),
+                      // Section 2: Service does not include (only when non-empty)
+                      if (notIncluded.isNotEmpty) ...[
+                        const SizedBox(height: 28),
+                        const Text(
+                          'Service does not include',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Column(
+                          children: notIncluded.map((item) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.remove_circle_outline_rounded,
+                                    color: Color(0xFFE53935),
+                                    size: 21,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      item,
+                                      style: const TextStyle(
+                                        fontSize: 14.5,
+                                        color: Color(0xFF475569),
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
 
-                      // "Show more" button
-                      if (faqs.length > 4)
-                        Center(
-                          child: TextButton(
-                            onPressed: () {
-                              setState(() => _showAllFaqs = !_showAllFaqs);
-                            },
-                            child: Text(
-                              _showAllFaqs ? 'Show less' : 'Show more',
-                              style: const TextStyle(
-                                color: Color(0xFF00A859),
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
+                      // Section 3: Please note (only when non-empty)
+                      if (notes.isNotEmpty) ...[
+                        const SizedBox(height: 28),
+                        const Text(
+                          'Please note',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Column(
+                          children: notes.map((item) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.info_outline_rounded,
+                                    color: Color(0xFF64748B),
+                                    size: 21,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      item,
+                                      style: const TextStyle(
+                                        fontSize: 14.5,
+                                        color: Color(0xFF475569),
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+
+                      // Section 4: Frequently Asked Questions (only when non-empty)
+                      if (faqs.isNotEmpty) ...[
+                        const SizedBox(height: 28),
+                        const Text(
+                          'Frequently Asked Questions',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Column(
+                          children: List.generate(displayedFaqs.length, (index) {
+                            final faq = displayedFaqs[index];
+                            final isExpanded = _expandedFaqIndices.contains(index);
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                              ),
+                              child: Theme(
+                                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                                child: ExpansionTile(
+                                  key: PageStorageKey('faq_$index'),
+                                  initiallyExpanded: isExpanded,
+                                  onExpansionChanged: (expanded) {
+                                    setState(() {
+                                      if (expanded) {
+                                        _expandedFaqIndices.add(index);
+                                      } else {
+                                        _expandedFaqIndices.remove(index);
+                                      }
+                                    });
+                                  },
+                                  trailing: Icon(
+                                    isExpanded ? Icons.remove : Icons.add,
+                                    color: const Color(0xFF1E293B),
+                                    size: 20,
+                                  ),
+                                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                                  title: Text(
+                                    faq['question'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  children: [
+                                    Text(
+                                      faq['answer'] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        color: Color(0xFF64748B),
+                                        height: 1.45,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                        if (faqs.length > 4)
+                          Center(
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() => _showAllFaqs = !_showAllFaqs);
+                              },
+                              child: Text(
+                                _showAllFaqs ? 'Show less' : 'Show more',
+                                style: const TextStyle(
+                                  color: Color(0xFF00A859),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -75,6 +75,9 @@ ServiceModel createFakeService({
   num mrp = 1499,
   double rating = 4.8,
   int ratingCount = 124,
+  List<String> whatIncluded = const [],
+  List<String> whatNotIncluded = const [],
+  List<String> frequentlyAskedQuestions = const [],
 }) {
   return ServiceModel(
     id: id,
@@ -85,6 +88,9 @@ ServiceModel createFakeService({
     ratingCount: ratingCount,
     description: 'Complete high pressure cleaning and inspection.',
     serviceHighlights: const ['High pressure water wash', 'Inverter check', 'Efficiency test'],
+    whatIncluded: whatIncluded,
+    whatNotIncluded: whatNotIncluded,
+    frequentlyAskedQuestions: frequentlyAskedQuestions,
   );
 }
 
