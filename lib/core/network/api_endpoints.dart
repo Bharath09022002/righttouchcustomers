@@ -117,4 +117,17 @@ class ApiEndpoints {
   // Device token & Permissions
   static const deviceToken = '/api/user/device-token';
   static const permissions = '/api/user/permissions';
+
+  // Alternative & Additional Postman Collection Endpoints
+  static String cartRemoveAlt(String id) => '/api/user/cart/removed/$id';
+  static String cartItemUpdate(String id) => '/api/user/cart/$id';
+  static String cartById(String id) => '/api/user/cart/$id';
+  static const paymentOrderAlt = '/api/user/payment/order';
+  static const paymentVerify = '/api/user/payment/verify';
+  static const productQuotes = '/api/user/product-quotes';
+  static String productQuote(String id) => '/api/user/product-quotes/$id';
+  static String productBookingDetail(String id) => '/api/user/product-bookings/$id';
+  static String productBookingCancel(String id) => '/api/user/productBookingCancel/$id';
+  static String productBookingUpdate(String id) => '/api/user/productBookingUpdate/$id';
+  static const bookingDeleteAll = '/api/user/booking/deleteAll';
 }

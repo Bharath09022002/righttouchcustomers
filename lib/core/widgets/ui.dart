@@ -138,21 +138,26 @@ class _AppButtonState extends State<AppButton> {
       );
     }
 
-    final button = GestureDetector(
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      onTap: isEnabled
-          ? () {
-              HapticFeedback.lightImpact();
-              widget.onPressed!();
-            }
-          : null,
-      child: AnimatedScale(
-        scale: _pressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOutBack,
-        child: buttonBody,
+    final button = Semantics(
+      button: true,
+      enabled: isEnabled,
+      label: widget.loading ? '${widget.label}, loading' : widget.label,
+      child: GestureDetector(
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
+        onTap: isEnabled
+            ? () {
+                HapticFeedback.lightImpact();
+                widget.onPressed!();
+              }
+            : null,
+        child: AnimatedScale(
+          scale: _pressed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOutBack,
+          child: buttonBody,
+        ),
       ),
     );
 

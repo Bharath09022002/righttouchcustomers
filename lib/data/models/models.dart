@@ -119,10 +119,17 @@ class ServiceModel {
   final String? categoryId;
   final String? categoryName;
   final int durationMin;
+  final String? durationText;
   final bool available;
   final String? availabilityPrompt;
   final String warranty;
   final bool isTopService;
+  final List<String> whatIncluded;
+  final List<String> whatNotIncluded;
+  final List<String> serviceHighlights;
+  final List<String> frequentlyAskedQuestions;
+  final List<String> serviceChecklist;
+  final String? cancellationPolicy;
 
   ServiceModel({
     required this.id,
@@ -137,10 +144,17 @@ class ServiceModel {
     this.categoryId,
     this.categoryName,
     this.durationMin = 60,
+    this.durationText,
     this.available = true,
     this.availabilityPrompt,
     this.warranty = '30-Day Warranty',
     this.isTopService = true,
+    this.whatIncluded = const [],
+    this.whatNotIncluded = const [],
+    this.serviceHighlights = const [],
+    this.frequentlyAskedQuestions = const [],
+    this.serviceChecklist = const [],
+    this.cancellationPolicy,
   });
 
   factory ServiceModel.fromJson(dynamic j) {
@@ -191,6 +205,15 @@ class ServiceModel {
     final w = (m['serviceWarranty'] ?? m['warranty'])?.toString();
     final warrantyVal = (w != null && w.trim().isNotEmpty) ? w.trim() : 'Service Warranty';
 
+    List<String> parseStrList(dynamic val) {
+      if (val is List) {
+        return val.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+      }
+      return const [];
+    }
+
+    final durText = m['duration']?.toString();
+
     return ServiceModel(
       id: str(m['_id'] ?? m['id']),
       name: str(m['serviceName'] ?? m['name'] ?? m['title'] ?? 'Service'),
@@ -206,10 +229,17 @@ class ServiceModel {
       categoryName: catName.isNotEmpty ? catName : null,
       durationMin: (m['durationMin'] is num)
           ? (m['durationMin'] as num).toInt()
-          : (m['duration']?.toString().contains('hour') == true ? 120 : 60),
+          : (durText?.contains('hour') == true ? 120 : 60),
+      durationText: durText,
       available: m['available'] != false && m['isActive'] != false,
       warranty: warrantyVal,
       isTopService: m['isTopService'] == true || (ratingVal >= 4.8 && ratingCnt > 0),
+      whatIncluded: parseStrList(m['whatIncluded']),
+      whatNotIncluded: parseStrList(m['whatNotIncluded']),
+      serviceHighlights: parseStrList(m['serviceHighlights']),
+      frequentlyAskedQuestions: parseStrList(m['frequentlyAskedQuestions']),
+      serviceChecklist: parseStrList(m['serviceChecklist']),
+      cancellationPolicy: m['cancellationPolicy']?.toString(),
     );
   }
 }
@@ -314,24 +344,71 @@ class BookingModel {
   final String status;
   final String? serviceName;
   final String? serviceId;
+  final String? image;
   final num? amount;
   final dynamic scheduledAt;
   final String? addressLine;
   final String? technicianName;
   final String? paymentStatus;
-  BookingModel({required this.id, required this.status, this.serviceName, this.serviceId, this.amount, this.scheduledAt, this.addressLine, this.technicianName, this.paymentStatus});
+
+  BookingModel({
+    required this.id,
+    required this.status,
+    this.serviceName,
+    this.serviceId,
+    this.image,
+    this.amount,
+    this.scheduledAt,
+    this.addressLine,
+    this.technicianName,
+    this.paymentStatus,
+  });
+
   factory BookingModel.fromJson(dynamic j) {
     final m = asMap(j);
-    final svc = m['service'];
+    final svc = m['service'] ??
+        (m['services'] is List && (m['services'] as List).isNotEmpty ? m['services'].first : null);
+
+    String svcName = '';
+    String? svcImg;
+    String? svcId;
+
+    if (svc is Map) {
+      svcName = str(svc['serviceName'] ?? svc['name'] ?? svc['title'] ?? svc['service']);
+      svcImg = (svc['image'] ??
+              svc['thumbnail'] ??
+              (svc['serviceImages'] is List && (svc['serviceImages'] as List).isNotEmpty
+                  ? svc['serviceImages'].first
+                  : null))
+          ?.toString();
+      svcId = str(svc['_id'] ?? svc['id']);
+    }
+
+    if (svcName.isEmpty) {
+      svcName = str(m['serviceName'] ?? m['name'] ?? m['title'] ?? m['service']);
+    }
+    if (svcName.isEmpty) {
+      svcName = 'Solar Hybrid Inverter General Service';
+    }
+
+    svcImg ??= (m['image'] ?? m['thumbnail'] ?? m['serviceImage'])?.toString();
+    svcId ??= str(m['serviceId'] ?? m['_id']);
+
     return BookingModel(
       id: str(m['_id'] ?? m['id'] ?? m['bookingId']),
       status: str(m['status'] ?? m['bookingStatus'] ?? 'pending'),
-      serviceName: svc is Map ? str(svc['name']) : str(m['serviceName']),
-      serviceId: svc is Map ? str(svc['_id']) : str(m['serviceId']),
-      amount: m['totalAmount'] is num ? m['totalAmount'] : (m['amount'] is num ? m['amount'] : null),
+      serviceName: svcName,
+      serviceId: svcId.isNotEmpty ? svcId : null,
+      image: svcImg,
+      amount: m['totalAmount'] is num
+          ? m['totalAmount']
+          : (m['amount'] is num ? m['amount'] : (m['cost'] is num ? m['cost'] : null)),
       scheduledAt: m['scheduledAt'] ?? m['slot'] ?? m['bookingDate'] ?? m['createdAt'],
-      addressLine: str(m['addressLine'] ?? (m['address'] is Map ? m['address']['addressLine'] : '')),
-      technicianName: m['technician'] is Map ? str(m['technician']['name']) : str(m['technicianName']),
+      addressLine: str(m['addressLine'] ??
+          (m['address'] is Map ? (m['address']['addressLine'] ?? m['address']['line']) : '')),
+      technicianName: m['technician'] is Map
+          ? str(m['technician']['name'] ?? m['technician']['fname'])
+          : str(m['technicianName']),
       paymentStatus: str(m['paymentStatus']),
     );
   }
@@ -346,6 +423,7 @@ class CartItemModel {
   final num? price;
   final num? originalPrice;
   final int qty;
+  final String? duration;
 
   CartItemModel({
     required this.id,
@@ -356,6 +434,7 @@ class CartItemModel {
     this.price,
     this.originalPrice,
     this.qty = 1,
+    this.duration,
   });
 
   factory CartItemModel.fromJson(dynamic j) {
@@ -420,6 +499,7 @@ class CartItemModel {
       price: p,
       originalPrice: (mrpVal != null && p != null && mrpVal > p) ? mrpVal : null,
       qty: q > 0 ? q : 1,
+      duration: (itObj['duration'] ?? m['duration'])?.toString(),
     );
   }
 }

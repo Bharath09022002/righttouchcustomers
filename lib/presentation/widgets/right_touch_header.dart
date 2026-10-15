@@ -40,7 +40,12 @@ class RightTouchTopAppBar extends ConsumerWidget implements PreferredSizeWidget 
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = GoRouterState.of(context).matchedLocation;
+    String? location;
+    try {
+      location = GoRouterState.of(context).matchedLocation;
+    } catch (_) {
+      location = null;
+    }
     final effectiveIsHome = isHome ?? (location == '/');
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -57,7 +62,12 @@ class RightTouchTopAppBar extends ConsumerWidget implements PreferredSizeWidget 
           orElse: () => 0,
         );
 
-    final canPop = context.canPop() || Navigator.of(context).canPop();
+    bool canPop = false;
+    try {
+      canPop = context.canPop();
+    } catch (_) {
+      canPop = Navigator.of(context).canPop();
+    }
 
     // Determine displayed brand/page name:
     // On home: 'Right Touch'
@@ -105,6 +115,7 @@ class RightTouchTopAppBar extends ConsumerWidget implements PreferredSizeWidget 
             child: SizedBox(
               height: 44,
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Back button if canPop or leading specified
                   if (leading != null) ...[
@@ -120,9 +131,13 @@ class RightTouchTopAppBar extends ConsumerWidget implements PreferredSizeWidget 
                         HapticFeedback.lightImpact();
                         if (onLeadingTap != null) {
                           onLeadingTap!();
-                        } else if (context.canPop()) {
-                          context.pop();
                         } else {
+                          try {
+                            if (context.canPop()) {
+                              context.pop();
+                              return;
+                            }
+                          } catch (_) {}
                           Navigator.of(context).maybePop();
                         }
                       },
@@ -131,13 +146,15 @@ class RightTouchTopAppBar extends ConsumerWidget implements PreferredSizeWidget 
                   ],
 
                   // LEFT: Brand capsule with logo icon and page name in green
-                  _buildBrandCapsule(
-                    context,
-                    isDark: isDark,
-                    displayName: displayName,
+                  Flexible(
+                    child: _buildBrandCapsule(
+                      context,
+                      isDark: isDark,
+                      displayName: displayName,
+                    ),
                   ),
 
-                  const Spacer(),
+                  const SizedBox(width: 8),
 
                   // RIGHT: Search & Cart buttons
                   _buildRightButtons(
@@ -208,15 +225,18 @@ class RightTouchTopAppBar extends ConsumerWidget implements PreferredSizeWidget 
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                displayName,
-                maxLines: 1,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                  ),
                 ),
               ),
             ],

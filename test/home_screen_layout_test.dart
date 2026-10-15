@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:righttouch/core/theme/app_theme.dart';
 import 'package:righttouch/presentation/screens/home/home_screen.dart';
+import 'widget/test_harness.dart';
 
 void main() {
   testWidgets('HomeScreen renders at 360x784 without overflow', (tester) async {
@@ -12,11 +11,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: HomeScreen(),
-        ),
-      ),
+      createTestApp(screen: const HomeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -32,11 +27,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: HomeScreen(),
-        ),
-      ),
+      createTestApp(screen: const HomeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -51,16 +42,9 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      ProviderScope(
-        child: MediaQuery(
-          data: const MediaQueryData(
-            textScaler: TextScaler.linear(1.3),
-            size: Size(360, 784),
-          ),
-          child: const MaterialApp(
-            home: HomeScreen(),
-          ),
-        ),
+      createTestApp(
+        screen: const HomeScreen(),
+        textScale: 1.3,
       ),
     );
     await tester.pumpAndSettle();
@@ -77,11 +61,9 @@ void main() {
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
 
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          theme: AppTheme.dark(),
-          home: const HomeScreen(),
-        ),
+      createTestApp(
+        screen: const HomeScreen(),
+        themeMode: ThemeMode.dark,
       ),
     );
     await tester.pumpAndSettle();

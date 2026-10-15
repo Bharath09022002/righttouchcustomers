@@ -1,4 +1,4 @@
-package com.righttouch.righttouch
+package com.righttouch.customer
 
 import io.flutter.embedding.android.FlutterActivity
 

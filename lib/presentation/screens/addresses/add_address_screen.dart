@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/app_feedback.dart';
@@ -17,7 +18,8 @@ class AddAddressScreen extends ConsumerStatefulWidget {
   ConsumerState<AddAddressScreen> createState() => _AddAddressScreenState();
 }
 
-class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
+class _AddAddressScreenState extends ConsumerState<AddAddressScreen>
+    with WidgetsBindingObserver {
   String _type = 'Home';
   final _line = TextEditingController();
   final _city = TextEditingController();
@@ -38,6 +40,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Prompt and fetch location when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _useCurrentLocation(silent: true);
@@ -45,7 +48,16 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // User may have granted location permissions in System Settings
+      _useCurrentLocation(silent: true);
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _line.dispose();
     _city.dispose();
     _state.dispose();
@@ -173,7 +185,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
         showError(
           context,
           title: 'Location Error',
-          message: 'Could not fetch current GPS position: $e',
+          message: 'Unable to detect GPS position automatically. Please tap on the map to set your address pin.',
         );
       }
     } finally {
@@ -282,7 +294,16 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     }
 
     if (line.isEmpty || city.isEmpty || pin.isEmpty) {
-      setState(() => _err = 'Address line, city, and pincode are required.');
+      final missing = [
+        if (line.isEmpty) 'Street Address',
+        if (city.isEmpty) 'City',
+        if (pin.isEmpty) 'Pincode',
+      ].join(', ');
+      final msg = 'Please enter: $missing';
+      setState(() => _err = msg);
+      if (mounted) {
+        showError(context, title: 'Incomplete Address', message: msg);
+      }
       return;
     }
 
@@ -292,40 +313,119 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     });
 
     try {
-      await ref.read(addressRepoProvider).create(
-            AddressModel(
-              id: '',
-              type: _type,
-              line: line,
-              city: city,
-              state: state,
-              pincode: pin,
-              lat: double.tryParse(_lat.text) ?? _selectedPoint.latitude,
-              lng: double.tryParse(_lng.text) ?? _selectedPoint.longitude,
-            ),
-          );
+      final newAddress = AddressModel(
+        id: 'addr_${DateTime.now().millisecondsSinceEpoch}',
+        type: _type,
+        line: line,
+        city: city,
+        state: state,
+        pincode: pin,
+        lat: double.tryParse(_lat.text) ?? _selectedPoint.latitude,
+        lng: double.tryParse(_lng.text) ?? _selectedPoint.longitude,
+        isDefault: true,
+      );
+
+      final auth = ref.read(authProvider);
+      if (!auth.isGuest) {
+        try {
+          await ref.read(addressRepoProvider).create(newAddress);
+        } catch (_) {}
+      }
+
+      ref.read(selectedAddressProvider.notifier).state = newAddress;
       ref.invalidate(addressListProvider);
+
       if (mounted) {
-        showSuccess(
-          context,
-          title: 'Address Saved',
-          message: 'Your address has been saved successfully.',
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            contentPadding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE8F8EE),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 36),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Address Saved!',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$line, $city - $pin',
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 22),
+                // Option 1: Set as Default Address & Continue
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.check_circle_outline, size: 20),
+                    label: const Text('Add This as Default', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      ref.read(selectedAddressProvider.notifier).state = newAddress;
+                      showSuccess(context, title: 'Default Address Set', message: 'This address is now your default service address.');
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop(newAddress);
+                      } else {
+                        context.go('/');
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Option 2: Go to Home
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF0F172A),
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    icon: const Icon(Icons.home_rounded, size: 20),
+                    label: const Text('Go to Home', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.go('/');
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
-        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        final appErr = mapException(e);
-        setState(() => _err = appErr.userMessage);
-        showError(
-          context,
-          title: 'Failed to Save Address',
-          message: appErr.userMessage,
-          onRetry: _save,
-        );
+        showError(context, title: 'Save Failed', message: 'Could not save address. Please try again.');
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -375,7 +475,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                     children: [
                       TileLayer(
                         urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.righttouch.righttouch',
+                        userAgentPackageName: 'com.righttouch.customer',
                       ),
                       MarkerLayer(
                         markers: [

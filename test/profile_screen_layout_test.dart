@@ -32,6 +32,7 @@ void main() {
         overrides: [
           authProvider.overrideWith(
               (ref) => FakeAuthNotifier(AuthState(loggedIn: true, user: sampleUser))),
+          unreadNotificationCountProvider.overrideWith((ref) async => 0),
           cartProvider.overrideWith((ref) => Future.value([
                 CartItemModel(
                   id: 'c1',
@@ -78,6 +79,7 @@ void main() {
         overrides: [
           authProvider.overrideWith(
               (ref) => FakeAuthNotifier(AuthState(loggedIn: true, user: sampleUser))),
+          unreadNotificationCountProvider.overrideWith((ref) async => 0),
           cartProvider.overrideWith((ref) => Future.value(<CartItemModel>[])),
         ],
         child: const MaterialApp(
@@ -110,6 +112,7 @@ void main() {
         overrides: [
           authProvider.overrideWith(
               (ref) => FakeAuthNotifier(AuthState(loggedIn: true, user: sampleUser))),
+          unreadNotificationCountProvider.overrideWith((ref) async => 0),
           cartProvider.overrideWith((ref) => Future.value(<CartItemModel>[])),
         ],
         child: const MaterialApp(
@@ -144,6 +147,7 @@ void main() {
         overrides: [
           authProvider.overrideWith(
               (ref) => FakeAuthNotifier(AuthState(loggedIn: true, user: sampleUser))),
+          unreadNotificationCountProvider.overrideWith((ref) async => 0),
           cartProvider.overrideWith((ref) => Future.value(<CartItemModel>[])),
         ],
         child: MaterialApp(

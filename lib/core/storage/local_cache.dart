@@ -1,13 +1,18 @@
 import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Lightweight offline persistence cache powered by SharedPreferences.
-/// Caches essential catalogs, services, and profile snapshots so the app
-/// loads instantly even during slow connectivity or offline modes.
+/// Lightweight offline persistence cache powered by SharedPreferences and FlutterSecureStorage.
+/// Caches essential catalogs and encrypts profile snapshots so customer PII is secure.
 class LocalCacheService {
   static const String _keyCategories = 'cached_categories_v1';
   static const String _keyServices = 'cached_services_v1';
   static const String _keyProfile = 'cached_profile_v1';
+
+  final FlutterSecureStorage _secure = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
 
   static LocalCacheService? _instance;
   static LocalCacheService get instance => _instance ??= LocalCacheService();
@@ -35,18 +40,29 @@ class LocalCacheService {
 
   Future<void> cacheProfile(Map<String, dynamic> rawUser) async {
     try {
+      await _secure.write(key: _keyProfile, value: jsonEncode(rawUser));
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_keyProfile, jsonEncode(rawUser));
+      await prefs.remove(_keyProfile); // Clean up legacy plaintext key
     } catch (_) {}
   }
 
   Future<Map<String, dynamic>?> getCachedProfile() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final str = prefs.getString(_keyProfile);
-      if (str != null && str.isNotEmpty) {
-        final decoded = jsonDecode(str);
+      final secureStr = await _secure.read(key: _keyProfile);
+      if (secureStr != null && secureStr.isNotEmpty) {
+        final decoded = jsonDecode(secureStr);
         if (decoded is Map<String, dynamic>) return decoded;
+      }
+      // Migration fallback from legacy unencrypted SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final legacyStr = prefs.getString(_keyProfile);
+      if (legacyStr != null && legacyStr.isNotEmpty) {
+        final decoded = jsonDecode(legacyStr);
+        if (decoded is Map<String, dynamic>) {
+          await _secure.write(key: _keyProfile, value: legacyStr);
+          await prefs.remove(_keyProfile);
+          return decoded;
+        }
       }
     } catch (_) {}
     return null;
@@ -54,6 +70,7 @@ class LocalCacheService {
 
   Future<void> clearAll() async {
     try {
+      await _secure.delete(key: _keyProfile);
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_keyCategories);
       await prefs.remove(_keyServices);

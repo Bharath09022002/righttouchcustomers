@@ -65,18 +65,29 @@ class TokenStorage {
     cachedToken = null;
     await _secure.delete(key: _kToken);
     await _secure.delete(key: _kRefresh);
+    await _secure.delete(key: _kMobile);
     final p = await SharedPreferences.getInstance();
-    await p.remove(_kToken); // Clean up legacy plaintext key if any
+    await p.remove(_kToken);
+    await p.remove(_kMobile);
   }
 
   Future<void> saveMobile(String m) async {
+    await _secure.write(key: _kMobile, value: m);
     final p = await SharedPreferences.getInstance();
-    await p.setString(_kMobile, m);
+    await p.remove(_kMobile);
   }
 
   Future<String?> getMobile() async {
+    final secureVal = await _secure.read(key: _kMobile);
+    if (secureVal != null && secureVal.isNotEmpty) return secureVal;
     final p = await SharedPreferences.getInstance();
-    return p.getString(_kMobile);
+    final legacy = p.getString(_kMobile);
+    if (legacy != null) {
+      await _secure.write(key: _kMobile, value: legacy);
+      await p.remove(_kMobile);
+      return legacy;
+    }
+    return null;
   }
 
   Future<bool> isOnboarded() async {

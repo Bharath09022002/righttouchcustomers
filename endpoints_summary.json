@@ -1,0 +1,722 @@
+[
+  {
+    "cat": "1. Auth & Account",
+    "name": "DELETE /api/user/delete-my-account",
+    "method": "DELETE",
+    "path": "/api/user/delete-my-account"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/auth/accept-terms",
+    "method": "POST",
+    "path": "/api/user/auth/accept-terms"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/auth/login/request-otp",
+    "method": "POST",
+    "path": "/api/user/auth/login/request-otp"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/auth/login/verify-otp",
+    "method": "POST",
+    "path": "/api/user/auth/login/verify-otp"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/login",
+    "method": "POST",
+    "path": "/api/user/login"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/login/customer",
+    "method": "POST",
+    "path": "/api/user/login/customer"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/login/customer/verify-otp",
+    "method": "POST",
+    "path": "/api/user/login/customer/verify-otp"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/login/owner",
+    "method": "POST",
+    "path": "/api/user/login/owner"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/owner/login",
+    "method": "POST",
+    "path": "/api/user/owner/login"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/owner/set-password",
+    "method": "POST",
+    "path": "/api/user/owner/set-password"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/owner/signup",
+    "method": "POST",
+    "path": "/api/user/owner/signup"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/owner/verify-otp",
+    "method": "POST",
+    "path": "/api/user/owner/verify-otp"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/resend-otp",
+    "method": "POST",
+    "path": "/api/user/resend-otp"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/set-password",
+    "method": "POST",
+    "path": "/api/user/set-password"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/signup",
+    "method": "POST",
+    "path": "/api/user/signup"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/signup/customer",
+    "method": "POST",
+    "path": "/api/user/signup/customer"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/signup/customer/verify-otp",
+    "method": "POST",
+    "path": "/api/user/signup/customer/verify-otp"
+  },
+  {
+    "cat": "1. Auth & Account",
+    "name": "POST /api/user/verify-otp",
+    "method": "POST",
+    "path": "/api/user/verify-otp"
+  },
+  {
+    "cat": "2. Profile",
+    "name": "GET /api/user/me",
+    "method": "GET",
+    "path": "/api/user/me"
+  },
+  {
+    "cat": "2. Profile",
+    "name": "POST /api/user/complete-profile",
+    "method": "POST",
+    "path": "/api/user/complete-profile"
+  },
+  {
+    "cat": "2. Profile",
+    "name": "PUT /api/user/me",
+    "method": "PUT",
+    "path": "/api/user/me"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "DELETE /api/user/service/:id/polygon",
+    "method": "DELETE",
+    "path": "/api/user/service/{{id}}/polygon"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "GET /api/user/getAllcategory",
+    "method": "GET",
+    "path": "/api/user/getAllcategory"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "GET /api/user/getAllServices",
+    "method": "GET",
+    "path": "/api/user/getAllServices"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "GET /api/user/getByIdcategory/:id",
+    "method": "GET",
+    "path": "/api/user/getByIdcategory/{{id}}"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "GET /api/user/getOneProduct/:id",
+    "method": "GET",
+    "path": "/api/user/getOneProduct/{{id}}?force={{force}}"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "GET /api/user/getProduct",
+    "method": "GET",
+    "path": "/api/user/getProduct?force={{force}}"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "GET /api/user/getServiceById/:id",
+    "method": "GET",
+    "path": "/api/user/getServiceById/{{id}}"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "GET /api/user/product-bookings",
+    "method": "GET",
+    "path": "/api/user/product-bookings"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "GET /api/user/product-bookings/:id",
+    "method": "GET",
+    "path": "/api/user/product-bookings/{{id}}"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "GET /api/user/service/:id/polygon",
+    "method": "GET",
+    "path": "/api/user/service/{{id}}/polygon"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "PUT /api/user/productBookingCancel/:id",
+    "method": "PUT",
+    "path": "/api/user/productBookingCancel/{{id}}"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "PUT /api/user/productBookingUpdate/:id",
+    "method": "PUT",
+    "path": "/api/user/productBookingUpdate/{{id}}"
+  },
+  {
+    "cat": "3. Catalog - Category, Service & Product",
+    "name": "PUT /api/user/service/:id/polygon",
+    "method": "PUT",
+    "path": "/api/user/service/{{id}}/polygon"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "DELETE /api/addresses",
+    "method": "DELETE",
+    "path": "/api/addresses"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "GET /api/addresses",
+    "method": "GET",
+    "path": "/api/addresses"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "GET /api/addresses/default",
+    "method": "GET",
+    "path": "/api/addresses/default"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "GET /api/addresses/reverse",
+    "method": "GET",
+    "path": "/api/addresses/reverse"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "GET /api/addresses/search",
+    "method": "GET",
+    "path": "/api/addresses/search"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "POST /api/addresses",
+    "method": "POST",
+    "path": "/api/addresses"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "POST /api/zones/check-service",
+    "method": "POST",
+    "path": "/api/zones/check-service"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "POST /api/zones/resolve",
+    "method": "POST",
+    "path": "/api/zones/resolve"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "PUT /api/addresses",
+    "method": "PUT",
+    "path": "/api/addresses"
+  },
+  {
+    "cat": "4. Addresses & Zone Resolution",
+    "name": "PUT /api/addresses/default",
+    "method": "PUT",
+    "path": "/api/addresses/default"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "DELETE /api/user/booking/:id",
+    "method": "DELETE",
+    "path": "/api/user/booking/{{id}}"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "DELETE /api/user/booking/deleteAll",
+    "method": "DELETE",
+    "path": "/api/user/booking/deleteAll"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "GET /api/user/booking/completed-services",
+    "method": "GET",
+    "path": "/api/user/booking/completed-services?technicianId={{technicianId}}&page={{page}}&limit={{limit}}"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "GET /api/user/booking/getCustomerBookings",
+    "method": "GET",
+    "path": "/api/user/booking/getCustomerBookings"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "GET /api/user/booking/reasons",
+    "method": "GET",
+    "path": "/api/user/booking/reasons"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "GET /api/user/booking/slots",
+    "method": "GET",
+    "path": "/api/user/booking/slots"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "GET /api/user/service/booking",
+    "method": "GET",
+    "path": "/api/user/service/booking"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "POST /api/user/booking/book-again",
+    "method": "POST",
+    "path": "/api/user/booking/book-again?technicianId={{technicianId}}&page={{page}}&limit={{limit}}"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "POST /api/user/booking/schedule",
+    "method": "POST",
+    "path": "/api/user/booking/schedule"
+  },
+  {
+    "cat": "5. Service Booking Lifecycle",
+    "name": "PUT /api/user/booking/cancel/:id",
+    "method": "PUT",
+    "path": "/api/user/booking/cancel/{{id}}"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "DELETE /api/user/cart/remove/:id",
+    "method": "DELETE",
+    "path": "/api/user/cart/remove/{{id}}"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "DELETE /api/user/cart/removed/:id",
+    "method": "DELETE",
+    "path": "/api/user/cart/removed/{{id}}"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "GET /api/user/cart/:id",
+    "method": "GET",
+    "path": "/api/user/cart/{{id}}"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "GET /api/user/cart/my-cart",
+    "method": "GET",
+    "path": "/api/user/cart/my-cart"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "GET /api/user/carts/:id",
+    "method": "GET",
+    "path": "/api/user/carts/{{id}}"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "POST /api/user/cart/add",
+    "method": "POST",
+    "path": "/api/user/cart/add"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "POST /api/user/cart/set-schedule",
+    "method": "POST",
+    "path": "/api/user/cart/set-schedule"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "POST /api/user/checkout",
+    "method": "POST",
+    "path": "/api/user/checkout"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "PUT /api/user/cart/:id",
+    "method": "PUT",
+    "path": "/api/user/cart/{{id}}"
+  },
+  {
+    "cat": "6. Cart & Checkout",
+    "name": "PUT /api/user/cart/update",
+    "method": "PUT",
+    "path": "/api/user/cart/update"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "GET /api/user/payment/:bookingId",
+    "method": "GET",
+    "path": "/api/user/payment/{{bookingId}}"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "GET /api/user/payments",
+    "method": "GET",
+    "path": "/api/user/payments"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "GET /api/user/payments/:bookingId",
+    "method": "GET",
+    "path": "/api/user/payments/{{bookingId}}"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "GET /api/user/payments/:bookingId/receipt",
+    "method": "GET",
+    "path": "/api/user/payments/{{bookingId}}/receipt"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "GET /api/user/payments/:bookingId/refunds",
+    "method": "GET",
+    "path": "/api/user/payments/{{bookingId}}/refunds"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "GET /api/user/payments/summary",
+    "method": "GET",
+    "path": "/api/user/payments/summary"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "POST /api/payment/webhook/razorpayx",
+    "method": "POST",
+    "path": "/api/payment/webhook/razorpayx"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "POST /api/user/payment/order",
+    "method": "POST",
+    "path": "/api/user/payment/order"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "POST /api/user/payment/retry-settlement",
+    "method": "POST",
+    "path": "/api/user/payment/retry-settlement"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "POST /api/user/payment/verify",
+    "method": "POST",
+    "path": "/api/user/payment/verify"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "POST /api/user/payment/webhook/razorpay",
+    "method": "POST",
+    "path": "/api/user/payment/webhook/razorpay"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "POST /api/user/payments/:bookingId/cash/declare",
+    "method": "POST",
+    "path": "/api/user/payments/{{bookingId}}/cash/declare"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "POST /api/user/payments/:bookingId/order",
+    "method": "POST",
+    "path": "/api/user/payments/{{bookingId}}/order"
+  },
+  {
+    "cat": "7. Payments & Receipts",
+    "name": "POST /api/user/payments/:bookingId/retry",
+    "method": "POST",
+    "path": "/api/user/payments/{{bookingId}}/retry"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "GET /api/user/product-quote-requests",
+    "method": "GET",
+    "path": "/api/user/product-quote-requests"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "GET /api/user/product-quote-requests/:id",
+    "method": "GET",
+    "path": "/api/user/product-quote-requests/{{id}}"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "GET /api/user/product-quotes",
+    "method": "GET",
+    "path": "/api/user/product-quotes"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "GET /api/user/product-quotes/:id",
+    "method": "GET",
+    "path": "/api/user/product-quotes/{{id}}"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "GET /api/user/quotations",
+    "method": "GET",
+    "path": "/api/user/quotations"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "GET /api/user/quotations/:id",
+    "method": "GET",
+    "path": "/api/user/quotations/{{id}}"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "PATCH /api/user/product-quote-requests/:id",
+    "method": "PATCH",
+    "path": "/api/user/product-quote-requests/{{id}}"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "PATCH /api/user/product-quotes/:id",
+    "method": "PATCH",
+    "path": "/api/user/product-quotes/{{id}}"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "POST /api/user/product-quote-requests",
+    "method": "POST",
+    "path": "/api/user/product-quote-requests"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "POST /api/user/product-quote-requests/:id/cancel",
+    "method": "POST",
+    "path": "/api/user/product-quote-requests/{{id}}/cancel"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "POST /api/user/product-quotes/request",
+    "method": "POST",
+    "path": "/api/user/product-quotes/request"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "POST /api/user/quotations/:id/accept",
+    "method": "POST",
+    "path": "/api/user/quotations/{{id}}/accept"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "POST /api/user/quotations/:id/decline",
+    "method": "POST",
+    "path": "/api/user/quotations/{{id}}/decline"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "POST /api/user/quotations/:id/reject",
+    "method": "POST",
+    "path": "/api/user/quotations/{{id}}/reject"
+  },
+  {
+    "cat": "8. Product Quotes, Quotations & Product Bookings",
+    "name": "POST /api/user/quotations/:id/view",
+    "method": "POST",
+    "path": "/api/user/quotations/{{id}}/view"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "GET /api/user/get-my-ratings",
+    "method": "GET",
+    "path": "/api/user/get-my-ratings"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "GET /api/user/get-my-reports",
+    "method": "GET",
+    "path": "/api/user/get-my-reports"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "GET /api/user/ratings",
+    "method": "GET",
+    "path": "/api/user/ratings"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "GET /api/user/ratings/:id",
+    "method": "GET",
+    "path": "/api/user/ratings/{{id}}"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "GET /api/user/reports/categories",
+    "method": "GET",
+    "path": "/api/user/reports/categories"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "GET /api/user/reports/mine",
+    "method": "GET",
+    "path": "/api/user/reports/mine"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "POST /api/user/rating",
+    "method": "POST",
+    "path": "/api/user/rating"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "POST /api/user/report",
+    "method": "POST",
+    "path": "/api/user/report"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "POST /api/user/reports",
+    "method": "POST",
+    "path": "/api/user/reports"
+  },
+  {
+    "cat": "9. Complaints, Reports & Ratings",
+    "name": "POST /api/user/reports/:id/withdraw",
+    "method": "POST",
+    "path": "/api/user/reports/{{id}}/withdraw"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "DELETE /api/user/deleteRating/:id",
+    "method": "DELETE",
+    "path": "/api/user/deleteRating/{{id}}"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "DELETE /api/user/device-token",
+    "method": "DELETE",
+    "path": "/api/user/device-token"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "GET /api/user/getAllProductBooking",
+    "method": "GET",
+    "path": "/api/user/getAllProductBooking"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "GET /api/user/getRatingById/:id",
+    "method": "GET",
+    "path": "/api/user/getRatingById/{{id}}"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "GET /api/user/notifications",
+    "method": "GET",
+    "path": "/api/user/notifications?limit={{limit}}&cursor={{cursor}}"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "GET /api/user/notifications/unread-count",
+    "method": "GET",
+    "path": "/api/user/notifications/unread-count"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "GET /api/user/notifications/unread-counts",
+    "method": "GET",
+    "path": "/api/user/notifications/unread-counts"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "GET /api/user/permissions",
+    "method": "GET",
+    "path": "/api/user/permissions?deviceId={{deviceId}}"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "PATCH /api/user/notifications/:id/read",
+    "method": "PATCH",
+    "path": "/api/user/notifications/{{id}}/read"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "PATCH /api/user/notifications/mark-read",
+    "method": "PATCH",
+    "path": "/api/user/notifications/mark-read"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "PATCH /api/user/notifications/read-all",
+    "method": "PATCH",
+    "path": "/api/user/notifications/read-all"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "POST /api/razorpayx/webhook",
+    "method": "POST",
+    "path": "/api/razorpayx/webhook"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "POST /api/user/device-token",
+    "method": "POST",
+    "path": "/api/user/device-token"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "POST /api/user/notifications/:id/opened",
+    "method": "POST",
+    "path": "/api/user/notifications/{{id}}/opened"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "POST /api/user/notifications/:id/received",
+    "method": "POST",
+    "path": "/api/user/notifications/{{id}}/received"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "PUT /api/user/permissions",
+    "method": "PUT",
+    "path": "/api/user/permissions?deviceId={{deviceId}}"
+  },
+  {
+    "cat": "10. Notifications, Permissions & Devices",
+    "name": "PUT /api/user/updateRating/:id",
+    "method": "PUT",
+    "path": "/api/user/updateRating/{{id}}"
+  }
+]

@@ -598,6 +598,11 @@ class CartRepository {
     if (r is ApiErr) throw ApiException(r.message);
   }
 
+  Future<void> updateQty(String id, int qty) async {
+    final r = await gw.cartUpdate({'cartItemId': id, 'id': id, 'quantity': qty});
+    if (r is ApiErr) throw ApiException(r.message);
+  }
+
   Future<void> checkout(Map<String, dynamic> b) async {
     final r = await gw.checkout(b);
     if (r is ApiErr) throw ApiException(r.message);

@@ -374,49 +374,53 @@ final productListProvider = FutureProvider((ref) async {
 });
 
 // ---------- Guest Mode Dummy Data ----------
-final _guestCartItems = [
+final selectedCartTipProvider = StateProvider<int>((ref) => 0);
+
+final List<CartItemModel> _guestCartItems = [
   CartItemModel(
     id: 'guest_cart_1',
-    itemId: 'solar_inverter_svc',
+    itemId: 'solar_water_heater_svc',
     itemType: 'service',
-    name: 'Solar Hybrid Inverter General Service',
-    image: 'assets/images/solar_inverter.jpg',
-    price: 1499,
-    originalPrice: 1999,
+    name: 'Solar water heater service 200 litre',
+    image: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600',
+    price: 1999,
+    originalPrice: 2499,
     qty: 1,
+    duration: '1.5 to 2.5 Hours',
   ),
   CartItemModel(
     id: 'guest_cart_2',
-    itemId: 'ac_cleaning_svc',
+    itemId: 'solar_inverter_svc',
     itemType: 'service',
-    name: 'AC Deep Cleaning & Anti-Bacterial Wash',
-    image: 'assets/images/ac_banner.jpg',
-    price: 999,
-    originalPrice: 1299,
+    name: 'Solar Off-Grid Inverter General Service',
+    image: 'https://images.unsplash.com/photo-1558441719-74e1d3eef46c?w=600',
+    price: 1499,
+    originalPrice: 1999,
     qty: 1,
+    duration: '1 to 2.5 Hours depending on inverter capacity',
   ),
 ];
 
 final _guestBookings = [
   BookingModel(
-    id: 'BK-89241',
-    status: 'confirmed',
-    serviceName: 'Solar Hybrid Inverter General Service',
+    id: '6acf3110ef3b2f609eb85242',
+    status: 'pending',
+    serviceName: 'Solar Off-Grid Inverter General Service',
     amount: 1499,
-    scheduledAt: 'Tomorrow, 10:30 AM',
-    addressLine: 'Flat 402, Green Palm Residency, Indiranagar, Bengaluru',
-    technicianName: 'Rajesh Kumar (Verified Expert)',
-    paymentStatus: 'paid',
+    scheduledAt: '14 Oct 2026, 1:06 PM',
+    addressLine: 'Anupparpalayam Pudur, Tiruppur, Tamil Nadu, 641652',
+    technicianName: 'Awaiting technician assignment',
+    paymentStatus: 'pending',
   ),
   BookingModel(
-    id: 'BK-78103',
-    status: 'completed',
-    serviceName: 'AC Deep Cleaning & Anti-Bacterial Wash',
-    amount: 999,
-    scheduledAt: '3 days ago',
-    addressLine: 'Flat 402, Green Palm Residency, Indiranagar, Bengaluru',
-    technicianName: 'Suresh Raina',
-    paymentStatus: 'paid',
+    id: '6acf3110ef3b2f609eb85243',
+    status: 'pending',
+    serviceName: 'Solar water heater service 200 litre',
+    amount: 1999,
+    scheduledAt: '14 Oct 2026, 1:06 PM',
+    addressLine: 'Anupparpalayam Pudur, Tiruppur, Tamil Nadu, 641652',
+    technicianName: 'Awaiting technician assignment',
+    paymentStatus: 'pending',
   ),
 ];
 

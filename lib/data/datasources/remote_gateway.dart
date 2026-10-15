@@ -126,9 +126,21 @@ class RemoteGateway {
   Future<ApiResult<dynamic>> cartAdd(String itemId, String type, int qty) =>
       api.post(ApiEndpoints.cartAdd, {'itemId': itemId, 'itemType': type, 'quantity': qty});
   Future<ApiResult<dynamic>> myCart() => api.get(ApiEndpoints.myCart);
-  Future<ApiResult<dynamic>> cartUpdate(Map<String, dynamic> body) =>
-      api.put(ApiEndpoints.cartUpdate, body);
-  Future<ApiResult<dynamic>> cartRemove(String id) => api.delete(ApiEndpoints.cartRemove(id));
+  Future<ApiResult<dynamic>> cartUpdate(Map<String, dynamic> body) async {
+    final res = await api.put(ApiEndpoints.cartUpdate, body);
+    if (res is ApiErr && res.statusCode == 404 && (body['id'] != null || body['cartItemId'] != null)) {
+      final cid = (body['id'] ?? body['cartItemId']).toString();
+      return api.put(ApiEndpoints.cartItemUpdate(cid), body);
+    }
+    return res;
+  }
+  Future<ApiResult<dynamic>> cartRemove(String id) async {
+    final res = await api.delete(ApiEndpoints.cartRemove(id));
+    if (res is ApiErr && res.statusCode == 404) {
+      return api.delete(ApiEndpoints.cartRemoveAlt(id));
+    }
+    return res;
+  }
   Future<ApiResult<dynamic>> cartSchedule(Map<String, dynamic> body) =>
       api.post(ApiEndpoints.cartSetSchedule, body);
   Future<ApiResult<dynamic>> checkout(Map<String, dynamic> body) =>

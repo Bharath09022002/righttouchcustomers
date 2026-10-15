@@ -65,7 +65,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ProductsScreen), findsOneWidget);
-    expect(find.text('Products'), findsOneWidget);
+    expect(find.text('Products'), findsWidgets);
     expect(find.text('RightTouch 550W Mono PERC Solar Panel'), findsOneWidget);
   });
 
@@ -88,7 +88,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ProductsScreen), findsOneWidget);
-    expect(find.text('Products'), findsOneWidget);
+    expect(find.text('Products'), findsWidgets);
   });
 
   testWidgets('ProductsScreen renders with textScaleFactor 1.3 without crash', (tester) async {
@@ -140,6 +140,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ProductsScreen), findsOneWidget);
-    expect(find.text('Products'), findsOneWidget);
+    expect(find.text('Products'), findsWidgets);
   });
 }

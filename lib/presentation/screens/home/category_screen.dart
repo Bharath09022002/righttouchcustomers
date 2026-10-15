@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/providers.dart';
 import '../../widgets/cards.dart';
+import '../../widgets/right_touch_header.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/ui/app_feedback.dart';
 
@@ -14,7 +15,8 @@ class CategoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(serviceListProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(name)),
+      backgroundColor: Colors.white,
+      appBar: RightTouchTopAppBar(title: name),
       body: detail.when(
         data: (all) {
           final list = all.where((s) => s.categoryId == id || id.isEmpty).toList();

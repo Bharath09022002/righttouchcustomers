@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../network/api_result.dart';
 import '../theme/app_colors.dart';
 import '../../widgets/rt_loader.dart';
 
@@ -23,6 +24,20 @@ class AppException implements Exception {
 /// with a customer-safe message. The raw message is logged in debug builds.
 AppException mapException(Object error) {
   if (error is AppException) return error;
+
+  if (error is ApiException) {
+    if (error.statusCode == 401 || error.message.toLowerCase().contains('unauthorized')) {
+      return AppException(
+        'Please sign in to complete this action.',
+        rawMessage: error.message,
+        statusCode: 401,
+      );
+    }
+    final cleaned = error.message.trim();
+    if (cleaned.isNotEmpty) {
+      return AppException(cleaned, rawMessage: cleaned, statusCode: error.statusCode);
+    }
+  }
 
   if (error is DioException) {
     final raw = _rawMsg(error);
@@ -47,71 +62,33 @@ AppException mapException(Object error) {
     }
 
     final code = error.response?.statusCode;
-    switch (code) {
-      case 400:
-        // Raw backend technical phrases like "Invalid ID format" or "Cast to ObjectId failed"
-        // must never reach customer-facing UI.
-        final msg = _isSafeCustomerMessage(raw)
-            ? raw
-            : 'Unable to process request. Please refresh and try again.';
-        return AppException(msg, rawMessage: raw, statusCode: code);
-      case 401:
-        return AppException(
-          'Session expired. Please log in again.',
-          rawMessage: raw,
-          statusCode: code,
-        );
-      case 403:
-        return AppException(
-          "You don't have permission to do this.",
-          rawMessage: raw,
-          statusCode: code,
-        );
-      case 404:
-        return AppException(
-          'Item not found.',
-          rawMessage: raw,
-          statusCode: code,
-        );
-      case 409:
-        final msg = _isSafeCustomerMessage(raw)
-            ? raw
-            : 'This action conflicts with an existing entry.';
-        return AppException(msg, rawMessage: raw, statusCode: code);
-      case 429:
-        return AppException(
-          'Too many requests. Please wait a moment.',
-          rawMessage: raw,
-          statusCode: code,
-        );
-      default:
-        if (code != null && code >= 500) {
-          return AppException(
-            'Something went wrong on our side. Please try again.',
-            rawMessage: raw,
-            statusCode: code,
-          );
-        }
+    if (code == 401) {
+      return AppException('Please sign in to continue.', rawMessage: raw, statusCode: 401);
+    }
+    if (raw.isNotEmpty && raw != 'Unknown error') {
+      return AppException(raw, rawMessage: raw, statusCode: code);
+    }
+    if (code != null) {
+      if (code == 404) return AppException('Requested item not found.', rawMessage: raw, statusCode: 404);
+      if (code == 403) return AppException("You don't have permission to do this.", rawMessage: raw, statusCode: 403);
+      if (code >= 500) return AppException('Server error ($code). Please try again in a moment.', rawMessage: raw, statusCode: code);
     }
     return AppException(
-      'Something went wrong. Please try again.',
+      'Unable to complete request. Please try again.',
       rawMessage: raw,
       statusCode: code,
     );
   }
 
-  final msg = error.toString();
-  if (msg.contains('ApiException:')) {
-    final cleaned = msg.replaceAll('ApiException:', '').trim();
-    return AppException(
-      _isSafeCustomerMessage(cleaned)
-          ? cleaned
-          : 'Unable to process request. Please refresh and try again.',
-      rawMessage: cleaned,
-    );
+  final msg = error.toString().replaceFirst('Exception:', '').replaceFirst('ApiException:', '').trim();
+  if (msg.isNotEmpty) {
+    if (msg.toLowerCase().contains('unauthorized')) {
+      return AppException('Please sign in to complete this action.', rawMessage: msg, statusCode: 401);
+    }
+    return AppException(msg, rawMessage: msg);
   }
   return AppException(
-    'Something went wrong. Please try again.',
+    'Unable to process request. Please try again.',
     rawMessage: msg,
   );
 }
@@ -119,54 +96,27 @@ AppException mapException(Object error) {
 String _rawMsg(DioException e) {
   final d = e.response?.data;
   if (d is Map) {
-    for (final k in ['message', 'error', 'msg']) {
+    for (final k in ['message', 'error', 'msg', 'reason', 'detail', 'castError']) {
       final v = d[k];
       if (v is String && v.isNotEmpty) return v;
     }
     final r = d['result'];
     if (r is Map) {
-      for (final k in ['message', 'error', 'reason']) {
+      for (final k in ['message', 'error', 'reason', 'detail', 'castError']) {
         final v = r[k];
         if (v is String && v.isNotEmpty) return v;
       }
     }
+    if (r is String && r.isNotEmpty) return r;
+    if (d['errors'] is List && (d['errors'] as List).isNotEmpty) {
+      final first = (d['errors'] as List).first;
+      if (first is Map && first['message'] != null) return first['message'].toString();
+      return first.toString();
+    }
+  } else if (d is String && d.isNotEmpty && !d.contains('<!DOCTYPE html>')) {
+    return d;
   }
   return e.message ?? 'Unknown error';
-}
-
-/// Checks that an error string is safe for customer display.
-/// Blocks technical backend errors (e.g. "Invalid ID format", MongoDB cast errors, BSON, stack traces).
-bool _isSafeCustomerMessage(String msg) {
-  if (msg.isEmpty || msg.length > 140) return false;
-  if (msg.contains('\n') || msg.contains('at ') || msg.contains('Error:')) return false;
-  final lower = msg.toLowerCase();
-  const blockedKeywords = [
-    'invalid id',
-    'id format',
-    'objectid',
-    'cast to',
-    'cast error',
-    'casterror',
-    'bson',
-    'mongo',
-    'mongoose',
-    'null pointer',
-    'nullpointer',
-    'syntax error',
-    'stack trace',
-    'e11000',
-    'referenceerror',
-    'typeerror',
-    'internal server',
-    'unhandled',
-    'token expired',
-    'jwt',
-  ];
-  for (final kw in blockedKeywords) {
-    if (lower.contains(kw)) return false;
-  }
-  if (msg.contains('_') && !msg.contains(' ')) return false;
-  return true;
 }
 
 // ---------------------------------------------------------------------------

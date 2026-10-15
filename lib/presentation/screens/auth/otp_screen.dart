@@ -251,29 +251,32 @@ class _S extends ConsumerState<OtpScreen> {
                       fullWidth: true,
                       onPressed: _verify),
                   const SizedBox(height: 18),
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text("Didn't receive code? ",
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text("Didn't receive code? ",
+                          style: TextStyle(
+                              color: AppColors.grey600, fontSize: 13)),
+                      GestureDetector(
+                        onTap: _cooldown > 0 ? null : _resend,
+                        child: Text(
+                            _cooldown > 0
+                                ? 'Resend in ${_cooldown}s'
+                                : 'Resend',
                             style: TextStyle(
-                                color: AppColors.grey600, fontSize: 13)),
-                        GestureDetector(
-                          onTap: _cooldown > 0 ? null : _resend,
-                          child: Text(
-                              _cooldown > 0
-                                  ? 'Resend in ${_cooldown}s'
-                                  : 'Resend',
-                              style: TextStyle(
-                                  color: _cooldown > 0
-                                      ? AppColors.grey400
-                                      : AppColors.primary,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 13)),
-                        ),
-                      ]),
+                                color: _cooldown > 0
+                                    ? AppColors.grey600
+                                    : AppColors.primary,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13)),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 28),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const Text('Wrong number? ',
                           style: TextStyle(

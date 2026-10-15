@@ -122,26 +122,33 @@ void showServiceShareSheet(BuildContext context, ServiceModel service) {
               const SizedBox(height: 12),
 
               // Option 2: Share via Apps (opens native share sheet)
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  SharePlus.instance.share(ShareParams(text: shareText));
-                },
-                icon: const Icon(Icons.share_rounded, size: 18, color: Colors.white),
-                label: const Text(
-                  'Share via Apps',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
+              Builder(
+                builder: (btnCtx) => ElevatedButton.icon(
+                  onPressed: () {
+                    final box = btnCtx.findRenderObject() as RenderBox?;
+                    final origin = box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
+                    Navigator.pop(ctx);
+                    SharePlus.instance.share(ShareParams(
+                      text: shareText,
+                      sharePositionOrigin: origin,
+                    ));
+                  },
+                  icon: const Icon(Icons.share_rounded, size: 18, color: Colors.white),
+                  label: const Text(
+                    'Share via Apps',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
                 ),
               ),
             ],

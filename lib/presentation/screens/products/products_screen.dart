@@ -349,7 +349,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           ),
         );
       },
-    );
+    ).whenComplete(() => noteCtrl.dispose());
   }
 
   @override

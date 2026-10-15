@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,7 @@ class SplashScreen extends ConsumerStatefulWidget {
 class _S extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
+  Timer? _watchdog;
   bool _navigated = false;
 
   @override
@@ -30,7 +32,7 @@ class _S extends ConsumerState<SplashScreen>
     )..repeat(reverse: true);
     _go();
     // Watchdog: never strand the user on the logo.
-    Future.delayed(const Duration(seconds: 8), () {
+    _watchdog = Timer(const Duration(seconds: 8), () {
       if (mounted && !_navigated) {
         _navigated = true;
         context.go('/login');
@@ -40,6 +42,7 @@ class _S extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
+    _watchdog?.cancel();
     _pulse.dispose();
     super.dispose();
   }

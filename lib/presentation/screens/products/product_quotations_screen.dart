@@ -54,6 +54,23 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
 
     setState(() => _submitting = true);
     try {
+      final auth = ref.read(authProvider);
+      if (auth.isGuest) {
+        await Future.delayed(const Duration(milliseconds: 600));
+        _requirementCtrl.clear();
+        if (mounted) {
+          showSuccess(
+            context,
+            title: 'Quote Requested',
+            message: 'Your custom product quotation request has been submitted. Our technical team will prepare a proposal.',
+            actionLabel: 'View My Requests',
+            onAction: () => _tabController.animateTo(2),
+          );
+          _tabController.animateTo(2);
+        }
+        return;
+      }
+
       await ref.read(supportRepoProvider).submitQuoteRequest(
             text,
             addressId: _selectedAddressId,

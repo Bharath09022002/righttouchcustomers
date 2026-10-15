@@ -164,27 +164,51 @@ class ApiClient {
   String _errMsg(DioException e) {
     final d = e.response?.data;
     if (d is Map) {
-      for (final k in ['message', 'error', 'msg']) {
+      for (final k in ['message', 'error', 'msg', 'reason', 'detail', 'castError']) {
         final v = d[k];
         if (v is String && v.isNotEmpty) return v;
       }
       final r = d['result'];
       if (r is Map) {
-        for (final k in ['message', 'error']) {
+        for (final k in ['message', 'error', 'reason', 'detail', 'castError']) {
           final v = r[k];
           if (v is String && v.isNotEmpty) return v;
         }
       }
       if (r is String && r.isNotEmpty) return r;
+      if (d['errors'] is List && (d['errors'] as List).isNotEmpty) {
+        final first = (d['errors'] as List).first;
+        if (first is Map && first['message'] != null) return first['message'].toString();
+        return first.toString();
+      }
+    } else if (d is String && d.isNotEmpty && !d.contains('<!DOCTYPE html>')) {
+      return d;
     }
+
     if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout) {
-      return 'Request timed out. Please try again.';
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      return 'Request timed out. Please check your connection and try again.';
     }
     if (e.type == DioExceptionType.connectionError) {
-      return 'Cannot reach server. Check your connection.';
+      return 'Cannot reach RightTouch servers. Please check your internet connection.';
     }
-    return 'Something went wrong (${e.response?.statusCode ?? 'network'}).';
+
+    final code = e.response?.statusCode;
+    if (code != null) {
+      if (code == 400) return 'Invalid request. Please check details and try again.';
+      if (code == 401) return 'Session expired. Please log in again.';
+      if (code == 403) return 'You do not have permission to perform this action.';
+      if (code == 404) return 'Requested item or service was not found.';
+      if (code == 409) return 'Request conflict. Please refresh and try again.';
+      if (code == 422) return 'Validation error. Please verify the entered details.';
+      if (code == 429) return 'Too many requests. Please wait a moment before retrying.';
+      if (code >= 500) return 'Server is currently experiencing issues. Please try again shortly.';
+    }
+
+    return e.message?.isNotEmpty == true
+        ? e.message!
+        : 'An unexpected issue occurred. Please try again.';
   }
 
   static String? reasonOf(dynamic body) {
