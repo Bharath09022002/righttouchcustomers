@@ -378,142 +378,20 @@ final productListProvider = FutureProvider((ref) async {
 final productDetailProvider = FutureProvider.autoDispose.family(
     (ref, String id) => ref.watch(productRepoProvider).product(id));
 
-// ---------- Guest Mode Dummy Data ----------
+// ---------- Guest Mode & Cart Tip ----------
 final selectedCartTipProvider = StateProvider<int>((ref) => 0);
-
-final List<CartItemModel> _guestCartItems = [
-  CartItemModel(
-    id: 'guest_cart_1',
-    itemId: 'solar_water_heater_svc',
-    itemType: 'service',
-    name: 'Solar water heater service 200 litre',
-    image: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600',
-    price: 1999,
-    originalPrice: 2499,
-    qty: 1,
-    duration: '1.5 to 2.5 Hours',
-  ),
-  CartItemModel(
-    id: 'guest_cart_2',
-    itemId: 'solar_inverter_svc',
-    itemType: 'service',
-    name: 'Solar Off-Grid Inverter General Service',
-    image: 'https://images.unsplash.com/photo-1558441719-74e1d3eef46c?w=600',
-    price: 1499,
-    originalPrice: 1999,
-    qty: 1,
-    duration: '1 to 2.5 Hours depending on inverter capacity',
-  ),
-];
-
-final _guestBookings = [
-  BookingModel(
-    id: '6acf3110ef3b2f609eb85242',
-    status: 'pending',
-    serviceName: 'Solar Off-Grid Inverter General Service',
-    amount: 1499,
-    scheduledAt: '14 Oct 2026, 1:06 PM',
-    addressLine: 'Anupparpalayam Pudur, Tiruppur, Tamil Nadu, 641652',
-    technicianName: 'Awaiting technician assignment',
-    paymentStatus: 'pending',
-  ),
-  BookingModel(
-    id: '6acf3110ef3b2f609eb85243',
-    status: 'pending',
-    serviceName: 'Solar water heater service 200 litre',
-    amount: 1999,
-    scheduledAt: '14 Oct 2026, 1:06 PM',
-    addressLine: 'Anupparpalayam Pudur, Tiruppur, Tamil Nadu, 641652',
-    technicianName: 'Awaiting technician assignment',
-    paymentStatus: 'pending',
-  ),
-];
-
-final _guestAddresses = [
-  AddressModel(
-    id: 'addr_1',
-    type: 'Home',
-    line: 'Flat 402, Green Palm Residency, 12th Main Road, Indiranagar',
-    city: 'Bengaluru',
-    state: 'Karnataka',
-    pincode: '560038',
-    isDefault: true,
-  ),
-  AddressModel(
-    id: 'addr_2',
-    type: 'Office',
-    line: 'Tech Tower 3, 5th Floor, Outer Ring Road, Bellandur',
-    city: 'Bengaluru',
-    state: 'Karnataka',
-    pincode: '560103',
-    isDefault: false,
-  ),
-];
-
-final _guestNotifications = [
-  NotificationModel(
-    id: 'notif_1',
-    title: 'Technician Assigned',
-    body: 'Rajesh Kumar has been assigned for your Solar Inverter service tomorrow at 10:30 AM.',
-    read: false,
-    createdAt: '10 mins ago',
-  ),
-  NotificationModel(
-    id: 'notif_2',
-    title: 'Welcome Offer (₹200 OFF)',
-    body: 'Use coupon code FIRSTTOUCH to get ₹200 OFF on your first booking!',
-    read: false,
-    createdAt: '1 hour ago',
-  ),
-  NotificationModel(
-    id: 'notif_3',
-    title: 'Service Completed',
-    body: 'Your AC Deep Cleaning was completed. Please rate your technician.',
-    read: true,
-    createdAt: '3 days ago',
-  ),
-];
-
-final _guestPayments = [
-  PaymentModel(
-    bookingId: 'BK-89241',
-    status: 'success',
-    amount: 1499,
-    method: 'UPI (Razorpay)',
-    txnId: 'pay_Nz9Kq18XlaP',
-  ),
-  PaymentModel(
-    bookingId: 'BK-78103',
-    status: 'success',
-    amount: 999,
-    method: 'Credit Card',
-    txnId: 'pay_Mk3Tz52XplQ',
-  ),
-];
-
-final _guestQuotations = [
-  QuotationModel(
-    id: 'QT-5012',
-    status: 'approved',
-    title: '5kW Rooftop Solar Hybrid System',
-    amount: 245000,
-    createdAt: 'Yesterday',
-  ),
-];
 
 // ---------- bookings / cart / addresses / misc ----------
 final myBookingsProvider = FutureProvider((ref) async {
   final isGuest = ref.watch(authProvider).isGuest;
-  if (isGuest) return _guestBookings;
+  if (isGuest) return const <BookingModel>[];
   return ref.watch(bookingRepoProvider).myBookings();
 });
 
 final bookingDetailProvider = FutureProvider.autoDispose.family(
     (ref, String id) async {
   final isGuest = ref.watch(authProvider).isGuest;
-  if (isGuest) {
-    return _guestBookings.where((b) => b.id == id).firstOrNull ?? _guestBookings.first;
-  }
+  if (isGuest) throw ApiException('Please sign in to view booking details.');
   final cached = ref.read(myBookingsProvider).valueOrNull?.where((b) => b.id == id).firstOrNull;
   try {
     return await ref.watch(bookingRepoProvider).detail(id);
@@ -525,13 +403,13 @@ final bookingDetailProvider = FutureProvider.autoDispose.family(
 
 final cartProvider = FutureProvider((ref) async {
   final isGuest = ref.watch(authProvider).isGuest;
-  if (isGuest) return _guestCartItems;
+  if (isGuest) return const <CartItemModel>[];
   return ref.watch(cartRepoProvider).myCart();
 });
 
 final addressListProvider = FutureProvider((ref) async {
   final isGuest = ref.watch(authProvider).isGuest;
-  if (isGuest) return _guestAddresses;
+  if (isGuest) return const <AddressModel>[];
   return ref.watch(addressRepoProvider).list();
 });
 
@@ -539,7 +417,7 @@ final selectedAddressProvider = StateProvider<AddressModel?>((_) => null);
 
 final paymentListProvider = FutureProvider((ref) async {
   final isGuest = ref.watch(authProvider).isGuest;
-  if (isGuest) return _guestPayments;
+  if (isGuest) return const <PaymentModel>[];
   return ref.watch(paymentRepoProvider).list();
 });
 
@@ -548,7 +426,7 @@ final paymentSummaryProvider =
 
 final quotationListProvider = FutureProvider((ref) async {
   final isGuest = ref.watch(authProvider).isGuest;
-  if (isGuest) return _guestQuotations;
+  if (isGuest) return const <QuotationModel>[];
   return ref.watch(supportRepoProvider).quotations();
 });
 
@@ -566,13 +444,13 @@ final productBookingsProvider =
 
 final notificationListProvider = FutureProvider((ref) async {
   final isGuest = ref.watch(authProvider).isGuest;
-  if (isGuest) return _guestNotifications;
+  if (isGuest) return const <NotificationModel>[];
   return ref.watch(supportRepoProvider).notifications();
 });
 
 final unreadNotificationCountProvider = FutureProvider((ref) async {
   final isGuest = ref.watch(authProvider).isGuest;
-  if (isGuest) return 2;
+  if (isGuest) return 0;
   return ref.watch(supportRepoProvider).unreadCount();
 });
 

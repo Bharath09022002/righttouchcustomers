@@ -4,6 +4,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../providers/providers.dart';
+import '../../widgets/guest_login_placeholder.dart';
 
 class QuotationsScreen extends ConsumerStatefulWidget {
   const QuotationsScreen({super.key});
@@ -29,6 +30,25 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authProvider);
+    if (auth.isGuest) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text(
+            'Quotations & Custom Orders',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+          ),
+        ),
+        body: const GuestLoginPlaceholder(
+          icon: Icons.request_quote_outlined,
+          title: 'Sign In to View Quotations',
+          subtitle: 'Please log in with your phone number to view custom quotes, request project estimations, and track orders.',
+          primaryButtonText: 'Log In / Sign Up',
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(

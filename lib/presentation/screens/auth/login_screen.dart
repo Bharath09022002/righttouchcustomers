@@ -7,16 +7,17 @@ import '../../../core/widgets/brand.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../providers/providers.dart';
 
-/// Passwordless customer auth screen matching the exact design:
+/// Passwordless customer auth screen matching the exact reference design:
 /// - Brand logo with lightbulb hand click & 'RIGHT TOUCH'
 /// - 'Welcome to Right Touch' heading
 /// - Segmented Login / Sign up toggle with active underline indicator
+/// - Fully swipeable PageView between Login and Sign up / Register
 /// - Mobile number field with 🇮🇳 +91, dropdown chevron, and green border
 /// - 'Your number is safe with us. We'll send a 4-digit OTP.' security badge
-/// - Vibrant green swipe to action slider button with dark green circle arrow
+/// - Vibrant green 'Continue with OTP' button with dark circle forward arrow
 /// - 'OR' divider
 /// - 'Explore as Guest' button with compass icon
-/// - Terms & Privacy Policy agreement footer
+/// - Terms & Privacy Policy agreement footer with green links
 class LoginScreen extends ConsumerStatefulWidget {
   final bool initialSignup;
   const LoginScreen({super.key, this.initialSignup = false});
@@ -26,21 +27,25 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  late bool _isSignup;
+  late int _currentPage;
+  late final PageController _pageController;
   late final TextEditingController _ctrl;
   final FocusNode _focusNode = FocusNode();
   String? _err;
   bool _busy = false;
 
+  bool get _isSignup => _currentPage == 1;
+
   @override
   void initState() {
     super.initState();
-    _isSignup = widget.initialSignup;
+    _currentPage = widget.initialSignup ? 1 : 0;
+    _pageController = PageController(initialPage: _currentPage);
     _ctrl = TextEditingController(text: ref.read(authProvider).mobile ?? '');
     _focusNode.addListener(() {
       setState(() {});
     });
-    if (_isSignup) {
+    if (widget.initialSignup) {
       Future.microtask(
         () => ref.read(authProvider.notifier).setMode(AuthMode.signup),
       );
@@ -51,18 +56,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void dispose() {
     _focusNode.dispose();
     _ctrl.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  void _setMode(bool signup) {
+  void _onTabSelected(int index) {
+    if (_currentPage == index) return;
     HapticFeedback.selectionClick();
-    ref
-        .read(authProvider.notifier)
-        .setMode(signup ? AuthMode.signup : AuthMode.login);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _onPageChanged(int index) {
+    HapticFeedback.selectionClick();
     setState(() {
-      _isSignup = signup;
+      _currentPage = index;
       _err = null;
     });
+    ref
+        .read(authProvider.notifier)
+        .setMode(_isSignup ? AuthMode.signup : AuthMode.login);
   }
 
   Future<void> _send() async {
@@ -88,19 +104,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (e != null) {
       final low = e.toLowerCase();
       if (low.contains('already registered') || low.contains('already exist')) {
-        _setMode(false);
+        _onTabSelected(0);
         showError(
           context,
           title: 'Already Registered',
           message:
               'This mobile number is already registered. Please proceed to Login.',
           actionLabel: 'Go to Login',
-          onAction: () => _setMode(false),
+          onAction: () => _onTabSelected(0),
         );
       } else if (low.contains('signup first') ||
           low.contains('not found') ||
           low.contains('not registered')) {
-        _setMode(true);
+        _onTabSelected(1);
         showError(
           context,
           title: 'New Account',
@@ -173,7 +189,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         backgroundColor: Colors.white,
         body: Stack(
           children: [
-            // Background organic wave graphics
+            // Background organic wave graphics matching reference
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(
@@ -183,395 +199,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
 
             SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 440),
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 18),
-
-                        // 1. BRAND LOGO
-                        Center(
-                          child: const BrandLogo(width: 170),
-                        ),
-
-                        const SizedBox(height: 26),
-
-                        // 2. HEADING & SUBHEADING
-                        const Text(
-                          'Welcome to Right Touch',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.4,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _isSignup
-                              ? 'Create an account to get started'
-                              : 'Sign in to continue to your account',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // 3. SEGMENTED TOGGLE (Login | Sign up)
-                        Container(
-                          height: 52,
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: _buildSegmentTab(
-                                  label: 'Login',
-                                  isSelected: !_isSignup,
-                                  onTap: () => _setMode(false),
-                                ),
-                              ),
-                              Expanded(
-                                child: _buildSegmentTab(
-                                  label: 'Sign up',
-                                  isSelected: _isSignup,
-                                  onTap: () => _setMode(true),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 26),
-
-                        // 4. MOBILE NUMBER INPUT
-                        const Text(
-                          'Mobile number',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Input Container with Green Border
-                        Container(
-                          height: 54,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: const Color(0xFF10B981),
-                              width: 1.6,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.08),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              // Country Flag
-                              const Text(
-                                '🇮🇳',
-                                style: TextStyle(fontSize: 20),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                '+91',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                size: 18,
-                                color: Color(0xFF0F172A),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                                width: 1.2,
-                                height: 24,
-                                color: const Color(0xFFE2E8F0),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextField(
-                                  controller: _ctrl,
-                                  focusNode: _focusNode,
-                                  keyboardType: TextInputType.phone,
-                                  maxLength: 10,
-                                  onChanged: (_) {
-                                    if (_err != null) {
-                                      setState(() => _err = null);
-                                    } else {
-                                      setState(() {});
-                                    }
-                                  },
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.5,
-                                    color: Color(0xFF0F172A),
-                                  ),
-                                  decoration: const InputDecoration(
-                                    hintText: 'Enter 10-digit number',
-                                    hintStyle: TextStyle(
-                                      color: Color(0xFF94A3B8),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                    counterText: '',
-                                    border: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        // 5. SECURITY BADGE
-                        Row(
-                          children: const [
-                            Icon(
-                              Icons.verified_user_rounded,
-                              size: 16,
-                              color: Color(0xFF10B981),
-                            ),
-                            SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                "Your number is safe with us. We'll send a 4-digit OTP.",
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  color: Color(0xFF64748B),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        if (_err != null) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEF2F2),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                  color: const Color(0xFFF87171), width: 1),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.info_outline_rounded,
-                                    color: Color(0xFFDC2626), size: 16),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    _err!,
-                                    style: const TextStyle(
-                                      color: Color(0xFFB91C1C),
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-
-                        const SizedBox(height: 24),
-
-                        // 6. SWIPE TO ACTION BUTTON ("Swipe to Login" / "Swipe to Register")
-                        SwipeToActionButton(
-                          label: _isSignup ? 'Swipe to Register' : 'Swipe to Login',
-                          isLoading: _busy,
-                          onSwipe: _send,
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // 7. OR DIVIDER
-                        Row(
-                          children: const [
-                            Expanded(
-                              child: Divider(
-                                color: Color(0xFFE2E8F0),
-                                thickness: 1,
-                              ),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 14),
-                              child: Text(
-                                'OR',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF64748B),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: Color(0xFFE2E8F0),
-                                thickness: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 22),
-
-                        // 8. EXPLORE AS GUEST BUTTON
-                        Material(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          child: InkWell(
-                            onTap: _exploreAsGuest,
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              height: 52,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFFCBD5E1),
-                                  width: 1.4,
-                                ),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color(0x06000000),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: const [
-                                      Icon(
-                                        Icons.explore_outlined,
-                                        size: 22,
-                                        color: Color(0xFF0F172A),
-                                      ),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        'Explore as Guest',
-                                        style: TextStyle(
-                                          fontSize: 15.5,
-                                          fontWeight: FontWeight.w800,
-                                          color: Color(0xFF0F172A),
-                                          letterSpacing: 0.1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // 9. TERMS & PRIVACY FOOTER
-                        Center(
-                          child: Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              const Text(
-                                'By continuing, you agree to our ',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF64748B),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _showTermsDialog,
-                                child: const Text(
-                                  'Terms',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF0F172A),
-                                    fontWeight: FontWeight.w700,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                              const Text(
-                                '  &  ',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF64748B),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _showTermsDialog,
-                                child: const Text(
-                                  'Privacy Policy',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF0F172A),
-                                    fontWeight: FontWeight.w700,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                              const Text(
-                                '.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF64748B),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: _onPageChanged,
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  _buildFormScreen(isSignup: false),
+                  _buildFormScreen(isSignup: true),
+                ],
               ),
             ),
           ],
@@ -580,7 +215,407 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  /// Segmented Tab Button with white card and green underline accent for active tab
+  /// Single scrollable form page for either Login (index 0) or Sign up (index 1)
+  Widget _buildFormScreen({required bool isSignup}) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 14),
+
+              // 1. BRAND LOGO (Right Touch lightbulb + text)
+              Center(
+                child: const BrandLogo(width: 175),
+              ),
+
+              const SizedBox(height: 22),
+
+              // 2. HEADING & SUBHEADING
+              const Text(
+                'Welcome to Right Touch',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.4,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                isSignup
+                    ? 'Create an account to get started'
+                    : 'Sign in to continue to your account',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              // 3. SEGMENTED TOGGLE (Login | Sign up) with active green indicator
+              Container(
+                height: 52,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildSegmentTab(
+                        label: 'Login',
+                        isSelected: !isSignup,
+                        onTap: () => _onTabSelected(0),
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSegmentTab(
+                        label: 'Sign up',
+                        isSelected: isSignup,
+                        onTap: () => _onTabSelected(1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 4. MOBILE NUMBER INPUT
+              const Text(
+                'Mobile number',
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Input Container with Green Accent Outline
+              Container(
+                height: 54,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFF10B981),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Flag icon
+                    const Text(
+                      '🇮🇳',
+                      style: TextStyle(fontSize: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '+91',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: Color(0xFF0F172A),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 1.2,
+                      height: 24,
+                      color: const Color(0xFFE2E8F0),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _ctrl,
+                        focusNode: isSignup ? null : _focusNode,
+                        keyboardType: TextInputType.phone,
+                        maxLength: 10,
+                        onChanged: (_) {
+                          if (_err != null) {
+                            setState(() => _err = null);
+                          } else {
+                            setState(() {});
+                          }
+                        },
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: Color(0xFF0F172A),
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Enter 10-digit number',
+                          hintStyle: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          counterText: '',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 5. SECURITY BADGE
+              Row(
+                children: const [
+                  Icon(
+                    Icons.verified_user_rounded,
+                    size: 16,
+                    color: Color(0xFF10B981),
+                  ),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      "Your number is safe with us. We'll send a 4-digit OTP.",
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              if (_err != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: const Color(0xFFF87171), width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded,
+                          color: Color(0xFFDC2626), size: 16),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _err!,
+                          style: const TextStyle(
+                            color: Color(0xFFB91C1C),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 22),
+
+              // 6. PRIMARY 'CONTINUE WITH OTP' ACTION BUTTON (Matching screenshot)
+              _ContinueWithOtpButton(
+                isLoading: _busy,
+                onPressed: _send,
+              ),
+
+              const SizedBox(height: 22),
+
+              // 7. OR DIVIDER
+              Row(
+                children: const [
+                  Expanded(
+                    child: Divider(
+                      color: Color(0xFFE2E8F0),
+                      thickness: 1,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 14),
+                    child: Text(
+                      'OR',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF94A3B8),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Divider(
+                      color: Color(0xFFE2E8F0),
+                      thickness: 1,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // 8. EXPLORE AS GUEST BUTTON
+              Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: _exploreAsGuest,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFCBD5E1),
+                        width: 1.4,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x06000000),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(
+                              Icons.explore_outlined,
+                              size: 22,
+                              color: Color(0xFF0F172A),
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Explore as Guest',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0F172A),
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 26),
+
+              // 9. TERMS & PRIVACY FOOTER (Green underline links)
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'By continuing, you agree to our',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: _showTermsDialog,
+                          child: const Text(
+                            'Terms',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF00A859),
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Color(0xFF00A859),
+                            ),
+                          ),
+                        ),
+                        const Text(
+                          ' & ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: _showTermsDialog,
+                          child: const Text(
+                            'Privacy Policy',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF00A859),
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Color(0xFF00A859),
+                            ),
+                          ),
+                        ),
+                        const Text(
+                          '.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Segmented Tab Button with white card and emerald green text + underline
   Widget _buildSegmentTab({
     required String label,
     required bool isSelected,
@@ -614,7 +649,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 color: isSelected
-                    ? const Color(0xFF0F172A)
+                    ? const Color(0xFF00A859) // Vivid brand green
                     : const Color(0xFF64748B),
               ),
             ),
@@ -637,25 +672,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-/// Interactive Swipe to Action Slider Button:
-/// Drag the thumb from left to right to trigger Login or Register.
-class SwipeToActionButton extends StatefulWidget {
-  final String label;
+/// Primary button exactly matching the user's design:
+/// - Vibrant green background
+/// - Dark green circular button on the left with forward arrow icon
+/// - Bold 'Continue with OTP' text
+/// - Supports both direct tap and interactive swipe-to-continue
+class _ContinueWithOtpButton extends StatefulWidget {
   final bool isLoading;
-  final Future<void> Function() onSwipe;
+  final Future<void> Function() onPressed;
 
-  const SwipeToActionButton({
-    super.key,
-    required this.label,
+  const _ContinueWithOtpButton({
     required this.isLoading,
-    required this.onSwipe,
+    required this.onPressed,
   });
 
   @override
-  State<SwipeToActionButton> createState() => _SwipeToActionButtonState();
+  State<_ContinueWithOtpButton> createState() => _ContinueWithOtpButtonState();
 }
 
-class _SwipeToActionButtonState extends State<SwipeToActionButton>
+class _ContinueWithOtpButtonState extends State<_ContinueWithOtpButton>
     with SingleTickerProviderStateMixin {
   double _dragProgress = 0.0;
   late final AnimationController _animController;
@@ -666,7 +701,7 @@ class _SwipeToActionButtonState extends State<SwipeToActionButton>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 280),
     )..addListener(() {
         if (_resetAnim != null) {
           setState(() {
@@ -677,14 +712,9 @@ class _SwipeToActionButtonState extends State<SwipeToActionButton>
   }
 
   @override
-  void didUpdateWidget(covariant SwipeToActionButton oldWidget) {
+  void didUpdateWidget(covariant _ContinueWithOtpButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If loading completes or resets, return thumb to start
     if (oldWidget.isLoading && !widget.isLoading) {
-      _resetSlider();
-    }
-    // If mode changed (Login <-> Register), reset slider
-    if (oldWidget.label != widget.label) {
       _resetSlider();
     }
   }
@@ -707,27 +737,21 @@ class _SwipeToActionButtonState extends State<SwipeToActionButton>
 
   void _onDragEnd(DragEndDetails details) {
     if (widget.isLoading) return;
-    if (_dragProgress >= 0.72) {
-      _handleSwipe();
+    if (_dragProgress >= 0.65) {
+      _handleAction();
     } else {
       _resetSlider();
     }
   }
 
-  void _onTapDirect() {
+  void _handleTap() {
     if (widget.isLoading) return;
-    _resetAnim = Tween<double>(begin: _dragProgress, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
-    );
-    _animController.forward(from: 0.0).then((_) {
-      _handleSwipe();
-    });
+    _handleAction();
   }
 
-  Future<void> _handleSwipe() async {
-    setState(() => _dragProgress = 1.0);
-    HapticFeedback.heavyImpact();
-    await widget.onSwipe();
+  Future<void> _handleAction() async {
+    HapticFeedback.mediumImpact();
+    await widget.onPressed();
     if (mounted && !widget.isLoading) {
       _resetSlider();
     }
@@ -742,157 +766,96 @@ class _SwipeToActionButtonState extends State<SwipeToActionButton>
   @override
   Widget build(BuildContext context) {
     const totalHeight = 56.0;
-    const thumbSize = 44.0;
-    const padding = 6.0;
+    const circleSize = 42.0;
+    const padding = 7.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalWidth = constraints.maxWidth;
-        final maxDrag = (totalWidth - thumbSize - (padding * 2)).clamp(1.0, 1000.0);
-        final currentOffset = _dragProgress * maxDrag;
+        final maxDragDistance = totalWidth - circleSize - (padding * 2);
+        final currentLeft = padding + (_dragProgress * maxDragDistance);
 
-        return GestureDetector(
-          onHorizontalDragUpdate: (d) => _onDragUpdate(d, maxDrag),
-          onHorizontalDragEnd: _onDragEnd,
-          onTap: _onTapDirect,
-          child: Container(
-            height: totalHeight,
-            decoration: BoxDecoration(
-              color: const Color(0xFF00A859),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x3800A859),
-                  blurRadius: 14,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Stack(
-              alignment: Alignment.centerLeft,
-              children: [
-                // Filled darker green track behind thumb as it advances
-                Container(
-                  width: padding + thumbSize + currentOffset,
-                  height: totalHeight,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF059669),
-                    borderRadius: BorderRadius.circular(16),
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _handleTap,
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              height: totalHeight,
+              decoration: BoxDecoration(
+                color: const Color(0xFF00A859), // Right Touch Brand Green
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x3300A859),
+                    blurRadius: 14,
+                    offset: Offset(0, 4),
                   ),
-                ),
-
-                // Center animated text label (fades out as thumb passes)
-                Positioned.fill(
-                  child: Center(
-                    child: Opacity(
-                      opacity: (1.0 - (_dragProgress * 1.6)).clamp(0.0, 1.0),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              widget.label,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.3,
-                              ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Center Text Label
+                  Center(
+                    child: widget.isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: Colors.white,
                             ),
-                            const SizedBox(width: 8),
-                            const _ShimmerChevrons(),
-                          ],
+                          )
+                        : const Text(
+                            'Continue with OTP',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                  ),
+
+                  // Left Dark Circle with Forward Arrow (Can be dragged or tapped)
+                  if (!widget.isLoading)
+                    Positioned(
+                      left: currentLeft,
+                      child: GestureDetector(
+                        onHorizontalDragUpdate: (details) =>
+                            _onDragUpdate(details, maxDragDistance),
+                        onHorizontalDragEnd: _onDragEnd,
+                        child: Container(
+                          width: circleSize,
+                          height: circleSize,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF006C38), // Darker Forest Green Circle
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x2A000000),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-
-                // Draggable circular thumb handle
-                Positioned(
-                  left: padding + currentOffset,
-                  child: Container(
-                    width: thumbSize,
-                    height: thumbSize,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF047857),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.22),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: widget.isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.arrow_forward_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
       },
-    );
-  }
-}
-
-/// Shimmering pulsing chevrons indicating the swipe direction
-class _ShimmerChevrons extends StatefulWidget {
-  const _ShimmerChevrons();
-
-  @override
-  State<_ShimmerChevrons> createState() => _ShimmerChevronsState();
-}
-
-class _ShimmerChevronsState extends State<_ShimmerChevrons>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1300),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.4, end: 1.0).animate(_controller),
-      child: const Text(
-        '❯❯❯',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.5,
-        ),
-      ),
     );
   }
 }

@@ -218,7 +218,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final d = ref.watch(bookingDetailProvider(widget.id));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F6F9),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

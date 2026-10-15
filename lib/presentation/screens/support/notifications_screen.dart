@@ -3,11 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/widgets/ui.dart';
 import '../../providers/providers.dart';
+import '../../widgets/guest_login_placeholder.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authProvider);
+    if (auth.isGuest) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Notifications')),
+        body: const GuestLoginPlaceholder(
+          icon: Icons.notifications_none_outlined,
+          title: 'Sign In to View Notifications',
+          subtitle: 'Please log in with your phone number to receive alerts on technician arrival, booking updates, and exclusive offers.',
+          primaryButtonText: 'Log In / Sign Up',
+        ),
+      );
+    }
+
     final n = ref.watch(notificationListProvider);
     return Scaffold(
       appBar: AppBar(

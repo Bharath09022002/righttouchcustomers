@@ -11,6 +11,7 @@ import '../../../core/utils/format.dart';
 import '../../../data/models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/right_touch_header.dart';
+import '../../widgets/guest_login_placeholder.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
   const BookingsScreen({super.key});
@@ -129,6 +130,21 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authProvider);
+    if (auth.isGuest) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: const RightTouchTopAppBar(title: 'Bookings'),
+        body: const GuestLoginPlaceholder(
+          icon: Icons.calendar_month_outlined,
+          title: 'Sign In to View Bookings',
+          subtitle: 'Please log in with your phone number to track active services, view assigned technician details, and service history.',
+          primaryButtonText: 'Log In / Sign Up',
+          secondaryButtonText: 'Explore Services',
+        ),
+      );
+    }
+
     final b = ref.watch(myBookingsProvider);
 
     return Scaffold(
@@ -206,37 +222,49 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
               children: [
-                // Filter dropdown matching Image 3
-                Row(
-                  children: [
-                    const Text(
-                      'Filter: ',
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
+                // Modern Segmented Filter Pills with live item counts
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(
+                        title: 'All',
+                        icon: Icons.all_inbox_rounded,
+                        count: list.length,
+                        isSelected: _selectedFilter == 'All',
+                        onTap: () => setState(() => _selectedFilter = 'All'),
                       ),
-                    ),
-                    DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedFilter,
-                        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF0F172A)),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                        items: ['All', 'Active', 'Completed', 'Cancelled']
-                            .map((f) => DropdownMenuItem(value: f, child: Text(f)))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _selectedFilter = val);
-                          }
-                        },
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        title: 'Active',
+                        icon: Icons.timelapse_rounded,
+                        count: list.where((i) => i.status.toLowerCase() == 'pending' || i.status.toLowerCase() == 'confirmed').length,
+                        isSelected: _selectedFilter == 'Active',
+                        onTap: () => setState(() => _selectedFilter = 'Active'),
+                        activeColor: const Color(0xFF00A859),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        title: 'Completed',
+                        icon: Icons.check_circle_outline_rounded,
+                        count: list.where((i) => i.status.toLowerCase() == 'completed').length,
+                        isSelected: _selectedFilter == 'Completed',
+                        onTap: () => setState(() => _selectedFilter = 'Completed'),
+                        activeColor: const Color(0xFF2563EB),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        title: 'Cancelled',
+                        icon: Icons.cancel_outlined,
+                        count: list.where((i) => i.status.toLowerCase() == 'cancelled').length,
+                        isSelected: _selectedFilter == 'Cancelled',
+                        onTap: () => setState(() => _selectedFilter = 'Cancelled'),
+                        activeColor: const Color(0xFFEF4444),
+                      ),
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 14),
@@ -663,6 +691,88 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String title,
+    required IconData icon,
+    required int count,
+    required bool isSelected,
+    required VoidCallback onTap,
+    Color activeColor = const Color(0xFF0F172A),
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? activeColor : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isSelected ? activeColor : const Color(0xFFE2E8F0),
+              width: 1.2,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: activeColor.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? Colors.white : const Color(0xFF64748B),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? Colors.white : const Color(0xFF334155),
+                  letterSpacing: -0.2,
+                ),
+              ),
+              if (count > 0) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.22)
+                        : const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: isSelected ? Colors.white : const Color(0xFF475569),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

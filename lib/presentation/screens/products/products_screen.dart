@@ -365,7 +365,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const RightTouchTopAppBar(title: 'Products'),
+      appBar: const RightTouchTopAppBar(title: 'Products', showSearch: false),
       body: RefreshIndicator(
         color: const Color(0xFF16A34A),
         onRefresh: () async {

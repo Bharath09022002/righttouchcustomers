@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/ui.dart';
-import '../../../core/ui/app_feedback.dart';
 import '../../providers/providers.dart';
 import '../../widgets/cards.dart';
+import '../../widgets/service_preview_dialog.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -41,22 +41,23 @@ class _S extends ConsumerState<SearchScreen> {
         ),
         cats.when(
           data: (list) => SizedBox(
-            height: 40,
+            height: 42,
             child: ListView(
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
-                ChoiceChip(
-                  label: const Text('All'),
-                  selected: q.categoryId == null,
-                  onSelected: (_) => ref.read(serviceQueryProvider.notifier).state = ServiceQuery(q.search, null),
+                _buildFilterChip(
+                  label: 'All',
+                  isSelected: q.categoryId == null,
+                  onTap: () => ref.read(serviceQueryProvider.notifier).state = ServiceQuery(q.search, null),
                 ),
                 for (final c in list) ...[
                   const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: Text(c.name),
-                    selected: q.categoryId == c.id,
-                    onSelected: (_) => ref.read(serviceQueryProvider.notifier).state = ServiceQuery(q.search, c.id),
+                  _buildFilterChip(
+                    label: c.name,
+                    isSelected: q.categoryId == c.id,
+                    onTap: () => ref.read(serviceQueryProvider.notifier).state = ServiceQuery(q.search, c.id),
                   ),
                 ],
               ],
@@ -79,28 +80,11 @@ class _S extends ConsumerState<SearchScreen> {
                   child: ServiceCard(
                     s: list[i],
                     onTap: () => context.push('/service/${list[i].id}'),
-                    onAdd: () async {
-                      try {
-                        await ref.read(cartRepoProvider).add(list[i].id, 'service', 1);
-                        ref.invalidate(cartProvider);
-                        if (!context.mounted) return;
-                        showSuccess(
-                          context,
-                          title: 'Added to cart',
-                          message: '${list[i].name} added to cart.',
-                          actionLabel: 'View cart',
-                          onAction: () => context.push('/cart'),
-                        );
-                      } catch (e) {
-                        if (!context.mounted) return;
-                        final appErr = mapException(e);
-                        showError(
-                          context,
-                          title: 'Could not add to cart',
-                          message: appErr.userMessage,
-                        );
-                      }
-                    },
+                    onAdd: () => showServicePreview(
+                      context: context,
+                      ref: ref,
+                      service: list[i],
+                    ),
                   ),
                 ),
               );
@@ -110,6 +94,62 @@ class _S extends ConsumerState<SearchScreen> {
           ),
         ),
       ]),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFE8F8EE) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF00A859) : const Color(0xFFCBD5E1),
+              width: isSelected ? 1.4 : 1.1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isSelected
+                    ? const Color(0x1F00A859)
+                    : const Color(0x08000000),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isSelected) ...[
+                const Icon(
+                  Icons.check_rounded,
+                  size: 14,
+                  color: Color(0xFF00A859),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? const Color(0xFF00A859) : const Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

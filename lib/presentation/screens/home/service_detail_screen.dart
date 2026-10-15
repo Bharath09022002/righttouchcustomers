@@ -470,6 +470,16 @@ class _ServiceDetailScreenState extends ConsumerState<ServiceDetailScreen> {
                               onPressed: _isAdding
                                   ? null
                                   : () async {
+                                      final auth = ref.read(authProvider);
+                                      if (auth.isGuest || !auth.loggedIn) {
+                                        showError(
+                                          context,
+                                          title: 'Notice',
+                                          message: 'Please sign in to complete this action.',
+                                        );
+                                        return;
+                                      }
+
                                       setState(() => _isAdding = true);
                                       HapticFeedback.lightImpact();
                                       try {

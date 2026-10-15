@@ -75,7 +75,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/otp', builder: (_, __) => const OtpScreen()),
       GoRoute(path: '/complete-profile', builder: (_, __) => const CompleteProfileScreen()),
       ShellRoute(
-        builder: (_, __, child) => MainShell(child: child),
+        builder: (_, state, child) => MainShell(
+          location: state.matchedLocation.isNotEmpty ? state.matchedLocation : state.uri.path,
+          child: child,
+        ),
         routes: [
           GoRoute(
             path: '/',

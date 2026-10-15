@@ -23,15 +23,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // Selected Day & Time Slot
   int _selectedDayIndex = 0;
   String _selectedTimeSlot = '09:00 AM';
+  String _timePeriodFilter = 'all'; // 'all', 'morning', 'afternoon', 'evening'
 
-  final List<String> _timeSlots = [
-    '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM',
-    '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
-    '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM',
-    '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM',
-    '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM',
-    '07:00 PM',
+  static const List<String> _morningSlots = [
+    '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
   ];
+  static const List<String> _afternoonSlots = [
+    '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM',
+  ];
+  static const List<String> _eveningSlots = [
+    '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM',
+  ];
+
 
   List<DateTime> get _availableDays {
     final now = DateTime.now();
@@ -40,7 +43,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   String _formatDayPill(DateTime d) {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '· ${d.day} ${months[d.month - 1]}';
+    return '${d.day} ${months[d.month - 1]}';
+  }
+
+  String _getDayOfWeek(DateTime d) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final now = DateTime.now();
+    final tomorrow = now.add(const Duration(days: 1));
+    if (d.year == tomorrow.year && d.month == tomorrow.month && d.day == tomorrow.day) {
+      return 'Tomorrow';
+    }
+    return days[d.weekday - 1];
+  }
+
+  String _getMonthName(DateTime d) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[d.month - 1];
   }
 
   Future<void> _handleBookNow() async {
@@ -187,7 +205,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final days = _availableDays;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F6F9),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -496,109 +514,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             ],
                           ),
 
-                          // If "Set Schedule" is picked, show day selector and time slot grid (Matching Image 4)
+                          // If "Set Schedule" is picked, show day selector and time slot grid
                           if (_scheduleMode == 'schedule') ...[
-                            const SizedBox(height: 20),
-                            const Text(
-                              'Select a day',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              child: Row(
-                                children: List.generate(days.length, (i) {
-                                  final isDaySelected = _selectedDayIndex == i;
-                                  return GestureDetector(
-                                    onTap: () {
-                                      HapticFeedback.lightImpact();
-                                      setState(() => _selectedDayIndex = i);
-                                    },
-                                    child: Container(
-                                      margin: const EdgeInsets.only(right: 8),
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: isDaySelected
-                                            ? const Color(0xFFE8F8EE)
-                                            : const Color(0xFFF1F5F9),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: isDaySelected
-                                              ? const Color(0xFF00A859)
-                                              : const Color(0xFFE2E8F0),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        _formatDayPill(days[i]),
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: isDaySelected
-                                              ? const Color(0xFF00A859)
-                                              : const Color(0xFF475569),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }),
-                              ),
-                            ),
-
-                            const SizedBox(height: 18),
-
-                            const Text(
-                              'Select a time',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Grid of time slots (3 columns) matching Image 4
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _timeSlots.map((slot) {
-                                final isSlotSelected = _selectedTimeSlot == slot;
-                                return GestureDetector(
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    setState(() => _selectedTimeSlot = slot);
-                                  },
-                                  child: Container(
-                                    width: (MediaQuery.of(context).size.width - 32 - 36 - 16) / 3,
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: isSlotSelected
-                                          ? const Color(0xFF00A859)
-                                          : const Color(0xFFF1F5F9),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: isSlotSelected
-                                            ? const Color(0xFF00A859)
-                                            : const Color(0xFFE2E8F0),
-                                      ),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      slot,
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: isSlotSelected ? FontWeight.w800 : FontWeight.w600,
-                                        color: isSlotSelected ? Colors.white : const Color(0xFF475569),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
+                            _buildSchedulePicker(days),
                           ],
                         ],
                       ),
@@ -1043,6 +961,367 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Modern, user-friendly schedule picker:
+  /// - Calendar Date Carousel with Day name, bold date number & month
+  /// - Time-of-day tabs: All, Morning, Afternoon, Evening
+  /// - High-contrast 3-column rounded pill slot grid
+  /// - Reassuring confirmation status badge
+  Widget _buildSchedulePicker(List<DateTime> days) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20),
+
+        // 1. SELECT A DAY HEADER
+        Row(
+          children: const [
+            Icon(Icons.calendar_today_rounded, size: 16, color: Color(0xFF16A34A)),
+            SizedBox(width: 8),
+            Text(
+              'Select a day',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // CALENDAR DATE CARD CAROUSEL
+        SizedBox(
+          height: 90,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: days.length,
+            itemBuilder: (context, i) {
+              final d = days[i];
+              final isDaySelected = _selectedDayIndex == i;
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _selectedDayIndex = i);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 72,
+                  margin: const EdgeInsets.only(right: 10, bottom: 4),
+                  decoration: BoxDecoration(
+                    color: isDaySelected ? const Color(0xFF16A34A) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDaySelected ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+                      width: isDaySelected ? 1.8 : 1.2,
+                    ),
+                    boxShadow: isDaySelected
+                        ? const [
+                            BoxShadow(
+                              color: Color(0x3816A34A),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ]
+                        : const [
+                            BoxShadow(
+                              color: Color(0x06000000),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _getDayOfWeek(d),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDaySelected ? Colors.white70 : const Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${d.day}',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: isDaySelected ? Colors.white : const Color(0xFF0F172A),
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _getMonthName(d),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDaySelected ? Colors.white70 : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 22),
+
+        // 2. SELECT TIME SLOT HEADER
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.schedule_rounded, size: 17, color: Color(0xFF16A34A)),
+                SizedBox(width: 8),
+                Text(
+                  'Select time slot',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$_selectedTimeSlot selected',
+                style: const TextStyle(
+                  color: Color(0xFF16A34A),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        // TIME PERIOD FILTER CHIPS (All, Morning, Afternoon, Evening)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: [
+              _buildTimePeriodFilterChip('all', 'All slots (21)'),
+              _buildTimePeriodFilterChip('morning', '🌅 Morning (6)'),
+              _buildTimePeriodFilterChip('afternoon', '☀️ Afternoon (8)'),
+              _buildTimePeriodFilterChip('evening', '🌆 Evening (7)'),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        // TIME SLOTS LIST / GRID
+        if (_timePeriodFilter == 'all') ...[
+          _buildPeriodSection('🌅 Morning', '09:00 AM – 12:00 PM', _morningSlots),
+          const SizedBox(height: 14),
+          _buildPeriodSection('☀️ Afternoon', '12:00 PM – 04:00 PM', _afternoonSlots),
+          const SizedBox(height: 14),
+          _buildPeriodSection('🌆 Evening', '04:00 PM – 07:00 PM', _eveningSlots),
+        ] else if (_timePeriodFilter == 'morning') ...[
+          _buildSlotGrid(_morningSlots),
+        ] else if (_timePeriodFilter == 'afternoon') ...[
+          _buildSlotGrid(_afternoonSlots),
+        ] else if (_timePeriodFilter == 'evening') ...[
+          _buildSlotGrid(_eveningSlots),
+        ],
+
+        // CONFIRMATION REASSURANCE BADGE
+        Container(
+          margin: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFBBF7D0)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFDCFCE7),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.event_available_rounded, color: Color(0xFF16A34A), size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Scheduled: ${_getDayOfWeek(days[_selectedDayIndex])}, ${_formatDayPill(days[_selectedDayIndex])} at $_selectedTimeSlot',
+                      style: const TextStyle(
+                        color: Color(0xFF15803D),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    const Text(
+                      'Technician will arrive promptly at your address.',
+                      style: TextStyle(
+                        color: Color(0xFF166534),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimePeriodFilterChip(String key, String label) {
+    final isSelected = _timePeriodFilter == key;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() => _timePeriodFilter = key);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected ? Colors.white : const Color(0xFF475569),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPeriodSection(String title, String timing, List<String> slots) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF334155),
+              ),
+            ),
+            Text(
+              timing,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF94A3B8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildSlotGrid(slots),
+      ],
+    );
+  }
+
+  Widget _buildSlotGrid(List<String> slots) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = (constraints.maxWidth - 16) / 3;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: slots.map((slot) {
+            final isSlotSelected = _selectedTimeSlot == slot;
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() => _selectedTimeSlot = slot);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: itemWidth,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isSlotSelected ? const Color(0xFF16A34A) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSlotSelected ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+                    width: isSlotSelected ? 1.6 : 1.1,
+                  ),
+                  boxShadow: isSlotSelected
+                      ? const [
+                          BoxShadow(
+                            color: Color(0x3316A34A),
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ]
+                      : const [
+                          BoxShadow(
+                            color: Color(0x04000000),
+                            blurRadius: 3,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                ),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isSlotSelected) ...[
+                      const Icon(Icons.check_circle_rounded, color: Colors.white, size: 14),
+                      const SizedBox(width: 5),
+                    ],
+                    Text(
+                      slot,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSlotSelected ? FontWeight.w800 : FontWeight.w700,
+                        color: isSlotSelected ? Colors.white : const Color(0xFF0F172A),
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 }

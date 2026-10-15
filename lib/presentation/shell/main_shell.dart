@@ -15,10 +15,26 @@ import '../screens/profile/profile_screen.dart';
 /// - Includes 5 core tabs: Home, Services, Product, Bookings, Profile
 class MainShell extends ConsumerWidget {
   final Widget child;
-  const MainShell({super.key, required this.child});
+  final String? location;
+  const MainShell({super.key, required this.child, this.location});
 
   int _index(BuildContext ctx) {
-    final loc = GoRouterState.of(ctx).matchedLocation;
+    String loc = (location ?? '').trim();
+    if (loc.isEmpty) {
+      try {
+        loc = GoRouterState.of(ctx).matchedLocation;
+      } catch (_) {}
+    }
+    if (loc.isEmpty) {
+      try {
+        loc = GoRouterState.of(ctx).uri.path;
+      } catch (_) {}
+    }
+    if (loc.isEmpty) {
+      try {
+        loc = GoRouter.of(ctx).routeInformationProvider.value.uri.path;
+      } catch (_) {}
+    }
     if (loc.startsWith('/services')) return 1;
     if (loc.startsWith('/product') || loc.startsWith('/quotation')) return 2;
     if (loc.startsWith('/bookings') || loc.startsWith('/book')) return 3;

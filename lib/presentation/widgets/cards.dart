@@ -346,6 +346,7 @@ class ApplianceServiceItemCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onBook,
         borderRadius: BorderRadius.circular(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -4,11 +4,26 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../providers/providers.dart';
+import '../../widgets/guest_login_placeholder.dart';
 
 class AddressesScreen extends ConsumerWidget {
   const AddressesScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authProvider);
+    if (auth.isGuest) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(title: const Text('My addresses'), backgroundColor: Colors.white, elevation: 0),
+        body: const GuestLoginPlaceholder(
+          icon: Icons.location_on_outlined,
+          title: 'Sign In to View Addresses',
+          subtitle: 'Please log in with your phone number to save, edit, and manage your delivery and service addresses.',
+          primaryButtonText: 'Log In / Sign Up',
+        ),
+      );
+    }
+
     final a = ref.watch(addressListProvider);
     return Scaffold(
       backgroundColor: Colors.white,

@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/right_touch_header.dart';
+import '../../widgets/guest_login_placeholder.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -187,6 +188,21 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authProvider);
+    if (auth.isGuest) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        appBar: RightTouchTopAppBar(title: 'My Cart'),
+        body: GuestLoginPlaceholder(
+          icon: Icons.shopping_bag_outlined,
+          title: 'Sign In to View Your Cart',
+          subtitle: 'Please log in with your phone number to view your cart items, select address, and proceed to booking.',
+          primaryButtonText: 'Log In to Continue',
+          secondaryButtonText: 'Explore Services',
+        ),
+      );
+    }
+
     final cart = ref.watch(cartProvider);
     final selectedTip = ref.watch(selectedCartTipProvider);
 

@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../providers/providers.dart';
 import '../../widgets/cards.dart';
 import '../../widgets/right_touch_header.dart';
+import '../../widgets/service_preview_dialog.dart';
 import '../../../core/widgets/ui.dart';
-import '../../../core/ui/app_feedback.dart';
 
 class CategoryScreen extends ConsumerWidget {
   final String id;
@@ -30,30 +30,11 @@ class CategoryScreen extends ConsumerWidget {
               child: ServiceCard(
                 s: show[i],
                 onTap: () => context.push('/service/${show[i].id}'),
-                onAdd: () async {
-                  try {
-                    await ref.read(cartRepoProvider).add(show[i].id, 'service', 1);
-                    ref.invalidate(cartProvider);
-                    if (context.mounted) {
-                      showSuccess(
-                        context,
-                        title: 'Added to cart',
-                        message: '${show[i].name} added to cart.',
-                        actionLabel: 'View cart',
-                        onAction: () => context.push('/cart'),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      final appErr = mapException(e);
-                      showError(
-                        context,
-                        title: 'Could not add to cart',
-                        message: appErr.userMessage,
-                      );
-                    }
-                  }
-                },
+                onAdd: () => showServicePreview(
+                  context: context,
+                  ref: ref,
+                  service: show[i],
+                ),
               ),
             ),
           );

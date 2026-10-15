@@ -154,7 +154,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                     InkWell(
-                      onTap: () => context.push('/services'),
+                      onTap: () => context.go('/services'),
                       child: Row(
                         children: const [
                           Text(
@@ -377,7 +377,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     InkWell(
-                      onTap: () => context.push('/services'),
+                      onTap: () => context.go('/services'),
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
@@ -403,7 +403,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                     InkWell(
-                      onTap: () => context.push('/services'),
+                      onTap: () => context.go('/services'),
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8.5),
@@ -581,9 +581,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               orElse: () => CategoryModel(id: '', name: item.title.replaceAll('\n', ' ')),
             );
             if (matched.id.isNotEmpty) {
-              context.push('/services?category=${Uri.encodeComponent(matched.name)}');
+              context.go('/services?category=${Uri.encodeComponent(matched.name)}');
             } else {
-              context.push('/services');
+              context.go('/services');
             }
           },
           borderRadius: BorderRadius.circular(16),
@@ -696,7 +696,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 12),
                       InkWell(
-                        onTap: () => context.push('/services'),
+                        onTap: () => context.go('/services'),
                         borderRadius: BorderRadius.circular(18),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -896,7 +896,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   InkWell(
-                    onTap: () => context.push('/products'),
+                    onTap: () => context.go('/products'),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [

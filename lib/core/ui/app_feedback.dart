@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../network/api_result.dart';
 import '../theme/app_colors.dart';
 import '../../widgets/rt_loader.dart';
@@ -16,6 +17,15 @@ class AppException implements Exception {
   final String? rawMessage;
   final int? statusCode;
   AppException(this.userMessage, {this.rawMessage, this.statusCode});
+
+  bool get isAuthError =>
+      statusCode == 401 ||
+      userMessage.toLowerCase().contains('sign in') ||
+      userMessage.toLowerCase().contains('sign-in') ||
+      userMessage.toLowerCase().contains('log in') ||
+      userMessage.toLowerCase().contains('login') ||
+      userMessage.toLowerCase().contains('unauthorized');
+
   @override
   String toString() => userMessage;
 }
@@ -160,20 +170,42 @@ void showError(
   VoidCallback? onRetry,
   String? actionLabel,
   VoidCallback? onAction,
+  bool? isAuthRequired,
 }) {
   _dismissCurrent(context);
-  final actLabel = actionLabel ?? (onRetry != null ? 'Retry' : null);
-  final act = onAction ?? onRetry;
+
+  final isAuth = isAuthRequired == true ||
+      (actionLabel == null &&
+          onAction == null &&
+          (message.toLowerCase().contains('sign in') ||
+              message.toLowerCase().contains('sign-in') ||
+              message.toLowerCase().contains('log in') ||
+              message.toLowerCase().contains('login') ||
+              message.toLowerCase().contains('unauthorized')));
+
+  final actLabel = isAuth
+      ? 'Log In'
+      : (actionLabel ?? (onRetry != null ? 'Retry' : null));
+
+  final act = isAuth
+      ? () {
+          if (context.mounted) {
+            context.push('/login');
+          }
+        }
+      : (onAction ?? onRetry);
+
   showDialog(
     context: context,
     barrierDismissible: true,
     builder: (ctx) => _FeedbackDialog(
-      icon: Icons.info_outline_rounded,
+      icon: isAuth ? Icons.login_rounded : Icons.info_outline_rounded,
       iconColor: AppColors.primary,
       iconBgColor: AppColors.primarySoft,
       title: title,
       message: message,
       actionLabel: actLabel,
+      isAuth: isAuth,
       onAction: act != null
           ? () {
               Navigator.of(ctx).pop();
@@ -209,6 +241,7 @@ class _FeedbackDialog extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   final VoidCallback onOk;
+  final bool isAuth;
 
   const _FeedbackDialog({
     required this.icon,
@@ -219,6 +252,7 @@ class _FeedbackDialog extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     required this.onOk,
+    this.isAuth = false,
   });
 
   @override
@@ -275,38 +309,67 @@ class _FeedbackDialog extends StatelessWidget {
       ),
       actions: [
         if (actionLabel != null && onAction != null) ...[
+          // Primary Action Button (Green) - e.g. "Log In"
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: onAction,
-              child: Text(
-                actionLabel!,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isAuth) ...[
+                    const Icon(Icons.login_rounded, size: 18),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    actionLabel!,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
+                ],
               ),
             ),
           ),
           const SizedBox(height: 8),
-        ],
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          // Secondary Dismiss/Cancel Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF64748B),
+                side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: onOk,
+              child: Text(
+                isAuth ? 'Cancel' : 'Dismiss',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
             ),
-            onPressed: onOk,
-            child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
           ),
-        ),
+        ] else ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: onOk,
+              child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+            ),
+          ),
+        ],
       ],
     );
   }

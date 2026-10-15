@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/ui.dart';
-import '../../../core/ui/app_feedback.dart';
 import '../../../data/models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/cards.dart';
 import '../../widgets/right_touch_header.dart';
+import '../../widgets/service_preview_dialog.dart';
 
 class ServicesScreen extends ConsumerStatefulWidget {
   final String? initialCategory;
@@ -32,29 +32,12 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         ServiceQuery(_searchQuery, cat?.id);
   }
 
-  void _bookService(ServiceModel s) async {
-    try {
-      await ref.read(cartRepoProvider).add(s.id, 'service', 1);
-      ref.invalidate(cartProvider);
-      if (mounted) {
-        showSuccess(
-          context,
-          title: 'Added to cart',
-          message: '${s.name} added to cart.',
-          actionLabel: 'View cart',
-          onAction: () => context.push('/cart'),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        final appErr = mapException(e);
-        showError(
-          context,
-          title: 'Could not add to cart',
-          message: appErr.userMessage,
-        );
-      }
-    }
+  void _bookService(ServiceModel s) {
+    showServicePreview(
+      context: context,
+      ref: ref,
+      service: s,
+    );
   }
 
   @override
