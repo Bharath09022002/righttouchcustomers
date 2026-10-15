@@ -143,21 +143,6 @@ class ProfileScreen extends ConsumerWidget {
           _buildActionButtons(context, ref),
 
           const SizedBox(height: 12),
-
-          // Delete Account Link
-          Center(
-            child: TextButton(
-              onPressed: () => _confirmDeleteAccount(context, ref),
-              child: const Text(
-                'Delete my account',
-                style: TextStyle(
-                  color: Color(0xFFEF4444),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -884,85 +869,5 @@ class ProfileScreen extends ConsumerWidget {
         context.go('/login');
       }
     }
-  }
-
-  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Delete account?'),
-        content: const Text(
-          'Are you sure you want to permanently delete your RightTouch account and data? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(c, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Delete Permanently'),
-          ),
-        ],
-      ),
-    );
-
-    if (ok == true) {
-      try {
-        await ref.read(authRepoProvider).deleteAccount();
-      } catch (_) {}
-      await ref.read(authProvider.notifier).logout();
-      if (context.mounted) {
-        showSuccess(context, title: 'Account Deleted', message: 'Your account has been deleted.');
-        context.go('/login');
-      }
-    }
-  }
-
-  void _showWarrantyModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: const [
-                Icon(Icons.verified_user_outlined, color: Color(0xFF16A34A), size: 24),
-                SizedBox(width: 8),
-                Text(
-                  'RightTouch Guarantee',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'All services and product installations come with our 30-Day Doorstep Re-service Coverage. If any issue arises, our certified technicians will fix it at zero extra cost.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF16A34A),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Got it'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

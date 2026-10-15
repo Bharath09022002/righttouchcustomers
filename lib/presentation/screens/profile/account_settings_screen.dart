@@ -56,6 +56,20 @@ class AccountSettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 28),
+          Center(
+            child: TextButton(
+              onPressed: () => context.push('/delete-account'),
+              child: const Text(
+                'Delete Account',
+                style: TextStyle(
+                  color: Color(0xFFEF4444),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
