@@ -1286,22 +1286,25 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     // Dynamic badge based on index or product properties
     final badgeInfo = _getBadgeInfo(index);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    return InkWell(
+      onTap: () => context.push('/product/${p.id}'),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x06000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           // Image Container + Badges
           Stack(
             children: [
@@ -1553,7 +1556,8 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   // ---------------------------------------------------------------------------
@@ -1563,8 +1567,11 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     final qty = _quantities[p.id] ?? 1;
     final isFav = _favorites.contains(p.id);
 
-    return Container(
-      padding: const EdgeInsets.all(12),
+    return InkWell(
+      onTap: () => context.push('/product/${p.id}'),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -1709,7 +1716,8 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   // ---------------------------------------------------------------------------

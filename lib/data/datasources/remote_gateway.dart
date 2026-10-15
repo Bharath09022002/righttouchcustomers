@@ -208,6 +208,8 @@ class RemoteGateway {
       api.post(ApiEndpoints.quotationReject(id), {});
   Future<ApiResult<dynamic>> productBookings() =>
       api.get(ApiEndpoints.productBookings);
+  Future<ApiResult<dynamic>> cancelProductBooking(String id, [String? reason]) =>
+      api.put(ApiEndpoints.productBookingCancel(id), {'reason': reason ?? 'Customer request'});
   Future<ApiResult<dynamic>> notifications() => api.get(ApiEndpoints.notifications);
   Future<ApiResult<dynamic>> unreadCount() => api.get(ApiEndpoints.notifUnreadCount);
   Future<ApiResult<dynamic>> markAllRead() => api.patch(ApiEndpoints.notifReadAll, {});

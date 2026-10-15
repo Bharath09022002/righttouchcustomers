@@ -496,6 +496,17 @@ class ProductRepository {
     }
     return result;
   }
+
+  Future<ProductModel> product(String id) async {
+    final list = await products();
+    return list.firstWhere(
+      (p) => p.id == id,
+      orElse: () => fallbackProducts.firstWhere(
+        (p) => p.id == id,
+        orElse: () => fallbackProducts.first,
+      ),
+    );
+  }
 }
 
 class BookingRepository {
@@ -707,6 +718,11 @@ class SupportRepository {
       if (r is ApiOk) return _parseList(r.data, (e) => ProductBookingModel.fromJson(e));
     } catch (_) {}
     return [];
+  }
+
+  Future<void> cancelProductBooking(String id, [String? reason]) async {
+    final r = await gw.cancelProductBooking(id, reason);
+    if (r is ApiErr) throw ApiException(r.message);
   }
 
   Future<List<NotificationModel>> notifications() async {

@@ -26,6 +26,7 @@ import '../../presentation/screens/support/notifications_screen.dart';
 import '../../presentation/screens/support/reports_screen.dart';
 import '../../presentation/screens/profile/edit_profile_screen.dart';
 import '../../presentation/screens/products/products_screen.dart';
+import '../../presentation/screens/products/product_detail_screen.dart';
 import '../../presentation/screens/services/services_screen.dart';
 
 class RouterNotifier extends ChangeNotifier {
@@ -110,6 +111,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
       GoRoute(path: '/category/:id', builder: (_, s) => CategoryScreen(id: s.pathParameters['id']!, name: s.uri.queryParameters['name'] ?? 'Category')),
       GoRoute(path: '/service/:id', builder: (_, s) => ServiceDetailScreen(id: s.pathParameters['id']!)),
+      GoRoute(path: '/product/:id', builder: (_, s) => ProductDetailScreen(id: s.pathParameters['id']!)),
       GoRoute(path: '/book/:id', builder: (_, s) => SlotBookingScreen(serviceId: s.pathParameters['id']!)),
       GoRoute(path: '/checkout', builder: (_, __) => const CheckoutScreen()),
       GoRoute(path: '/booking-success', builder: (_, __) => const BookingSuccessScreen()),

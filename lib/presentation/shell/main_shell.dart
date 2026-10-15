@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/products/products_screen.dart';
-import '../screens/products/product_quotations_screen.dart';
 import '../screens/services/services_screen.dart';
 import '../screens/booking/bookings_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -159,7 +158,7 @@ class HomeTabPlaceholder extends StatelessWidget {
 class ProductTabPlaceholder extends StatelessWidget {
   const ProductTabPlaceholder({super.key});
   @override
-  Widget build(BuildContext context) => const ProductQuotationsScreen();
+  Widget build(BuildContext context) => const ProductsScreen();
 }
 
 class ProductsTabPlaceholder extends StatelessWidget {

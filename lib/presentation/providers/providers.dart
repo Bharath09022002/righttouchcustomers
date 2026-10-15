@@ -374,6 +374,8 @@ final productListProvider = FutureProvider((ref) async {
       .watch(productRepoProvider)
       .products(search: q.search, categoryId: q.categoryId);
 });
+final productDetailProvider = FutureProvider.autoDispose.family(
+    (ref, String id) => ref.watch(productRepoProvider).product(id));
 
 // ---------- Guest Mode Dummy Data ----------
 final selectedCartTipProvider = StateProvider<int>((ref) => 0);
