@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../core/config/env.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -36,11 +38,12 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
           children: [
             Row(
               children: [
-                const Text(
-                  'RightTouch Help & Support',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                const Expanded(
+                  child: Text(
+                    'RightTouch Help & Support',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                  ),
                 ),
-                const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.pop(ctx),
@@ -59,11 +62,19 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                 child: const Icon(Icons.phone_in_talk_rounded, color: Color(0xFF00A859)),
               ),
               title: const Text('Call Customer Support', style: TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: const Text('Direct toll-free customer helpline', style: TextStyle(fontSize: 12)),
-              onTap: () {
+              subtitle: Text(Env.supportPhone, style: const TextStyle(fontSize: 12)),
+              onTap: () async {
                 Navigator.pop(ctx);
-                Clipboard.setData(const ClipboardData(text: '+919894169716'));
-                showSuccess(context, title: 'Number Copied', message: 'Support helpline copied to clipboard');
+                final cleanPhone = Env.supportPhone.replaceAll(' ', '');
+                final uri = Uri.parse('tel:$cleanPhone');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                } else {
+                  Clipboard.setData(ClipboardData(text: cleanPhone));
+                  if (context.mounted) {
+                    showSuccess(context, title: 'Number Copied', message: 'Support helpline copied to clipboard');
+                  }
+                }
               },
             ),
             const Divider(height: 1),
@@ -75,11 +86,40 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                   color: Color(0xFFEFF6FF),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.help_outline_rounded, color: Color(0xFF2563EB)),
+                child: const Icon(Icons.email_outlined, color: Color(0xFF2563EB)),
               ),
-              title: const Text('Frequently Asked Questions', style: TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: const Text('Learn about technician visits & warranty', style: TextStyle(fontSize: 12)),
-              onTap: () => Navigator.pop(ctx),
+              title: const Text('Email Support', style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: Text(Env.supportEmail, style: const TextStyle(fontSize: 12)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final uri = Uri.parse('mailto:${Env.supportEmail}');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                } else {
+                  Clipboard.setData(const ClipboardData(text: Env.supportEmail));
+                  if (context.mounted) {
+                    showSuccess(context, title: 'Email Copied', message: 'Support email copied to clipboard');
+                  }
+                }
+              },
+            ),
+            const Divider(height: 1),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.help_outline_rounded, color: Color(0xFF64748B)),
+              ),
+              title: const Text('Help & Complaints Desk', style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text('Raise or track support tickets', style: TextStyle(fontSize: 12)),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/reports');
+              },
             ),
           ],
         ),

@@ -20,6 +20,6 @@ class Env {
   static const Duration wakeUpThreshold = Duration(seconds: 8);
 
   /// Support contact information
-  static const String supportPhone = '+91 98941 69716';
+  static const String supportPhone = '+91 73051 07148';
   static const String supportEmail = '<SUPPORT_EMAIL>';
 }

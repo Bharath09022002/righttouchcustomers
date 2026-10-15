@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/config/env.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../providers/providers.dart';
@@ -28,10 +29,10 @@ class ProfileScreen extends ConsumerWidget {
             ? u!.fullName
             : ((u?.fname.isNotEmpty == true) ? '${u!.fname} ${u.lname}'.trim() : 'Customer'));
     final userEmail = isGuest
-        ? 'guest.explorer@righttouch.com'
+        ? Env.supportEmail
         : ((u?.email.isNotEmpty == true) ? u!.email : (u != null ? 'No email registered' : ''));
     final userPhone = isGuest
-        ? '+91 98941 69716'
+        ? Env.supportPhone
         : ((u?.mobile.isNotEmpty == true)
             ? u!.mobile
             : ((auth.mobile?.isNotEmpty == true) ? auth.mobile! : 'Not available'));

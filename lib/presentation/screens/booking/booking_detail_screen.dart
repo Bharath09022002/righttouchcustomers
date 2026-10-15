@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../core/config/env.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
@@ -163,11 +165,45 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 icon: const Icon(Icons.phone_in_talk_rounded),
-                label: const Text('Call +91 98941 69716', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                onPressed: () {
+                label: Text('Call ${Env.supportPhone}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                onPressed: () async {
                   Navigator.pop(ctx);
-                  Clipboard.setData(const ClipboardData(text: '+919894169716'));
-                  showSuccess(context, title: 'Number Copied', message: 'Toll-free helpline copied to clipboard');
+                  final cleanPhone = Env.supportPhone.replaceAll(' ', '');
+                  final uri = Uri.parse('tel:$cleanPhone');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri);
+                  } else {
+                    Clipboard.setData(ClipboardData(text: cleanPhone));
+                    if (context.mounted) {
+                      showSuccess(context, title: 'Number Copied', message: 'Support helpline copied to clipboard');
+                    }
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF0F172A),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                icon: const Icon(Icons.email_outlined),
+                label: Text('Email ${Env.supportEmail}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final uri = Uri.parse('mailto:${Env.supportEmail}');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri);
+                  } else {
+                    Clipboard.setData(const ClipboardData(text: Env.supportEmail));
+                    if (context.mounted) {
+                      showSuccess(context, title: 'Email Copied', message: 'Support email copied to clipboard');
+                    }
+                  }
                 },
               ),
             ),
@@ -260,10 +296,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
           final locationText = (b.addressLine != null && b.addressLine!.isNotEmpty)
               ? b.addressLine!
-              : 'Anupparpalayam Pudur, Tiruppur, Tamil Nadu, 641652';
+              : 'Address provided during booking';
 
-          final scheduledDate = b.scheduledAt != null ? fmtDate(b.scheduledAt) : '10/14/2026, 1:06:48 PM';
-          final amountVal = b.amount?.toInt() ?? 1499;
+          final scheduledDate = b.scheduledAt != null ? fmtDate(b.scheduledAt) : 'Slot will be confirmed';
+          final amountVal = b.amount?.toInt() ?? 0;
 
           return Column(
             children: [

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config/env.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_result.dart';
 import '../../core/storage/token_storage.dart';
@@ -75,8 +76,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         id: 'guest_user',
         fname: 'Guest',
         lname: 'Explorer',
-        mobile: '9894169716',
-        email: 'guest.explorer@righttouch.com',
+        mobile: Env.supportPhone.replaceAll(' ', '').replaceAll('+', ''),
+        email: Env.supportEmail,
         profileCompleted: true,
       ),
     );
