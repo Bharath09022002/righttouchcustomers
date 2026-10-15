@@ -62,11 +62,27 @@ class RightTouchTopAppBar extends ConsumerWidget implements PreferredSizeWidget 
           orElse: () => 0,
         );
 
+    final normLocation = location?.split('?').first.trim();
+    const rootRoutes = {
+      '',
+      '/',
+      '/services',
+      '/product',
+      '/products',
+      '/bookings',
+      '/profile',
+      '/account',
+      '/cart-tab',
+    };
+    final isRootTab = (effectiveIsHome == true) || (normLocation != null && rootRoutes.contains(normLocation));
+
     bool canPop = false;
-    try {
-      canPop = context.canPop();
-    } catch (_) {
-      canPop = Navigator.of(context).canPop();
+    if (showLeading && !isRootTab) {
+      try {
+        canPop = context.canPop();
+      } catch (_) {
+        canPop = Navigator.of(context).canPop();
+      }
     }
 
     // Determine displayed brand/page name:
@@ -121,9 +137,9 @@ class RightTouchTopAppBar extends ConsumerWidget implements PreferredSizeWidget 
                   if (leading != null) ...[
                     leading!,
                     const SizedBox(width: 8),
-                  ] else if (canPop) ...[
+                  ] else if (showLeading && canPop && !isRootTab) ...[
                     _buildCircleButton(
-                      icon: Icons.arrow_back_rounded,
+                      icon: leadingIcon ?? Icons.arrow_back_rounded,
                       iconColor: iconColor,
                       buttonBg: actionButtonBg,
                       buttonBorder: actionButtonBorder,
