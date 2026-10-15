@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +34,13 @@ void main() {
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(find.text('Deliver to'), findsOneWidget);
       expect(find.text('50K+'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Solar Inverter 5kW'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Solar Inverter 5kW'), findsOneWidget);
+      expect(find.byWidgetPredicate((w) => w is RichText && w.text.toPlainText().contains('Featured Products')), findsOneWidget);
     });
 
     testWidgets('Loading State: shows loading indicators gracefully', (tester) async {
@@ -46,7 +54,7 @@ void main() {
           screen: const HomeScreen(),
           overrides: [
             ...createDefaultOverrides(),
-            categoryListProvider.overrideWith((ref) => Future.delayed(const Duration(seconds: 10), () => <CategoryModel>[])),
+            categoryListProvider.overrideWith((ref) => Completer<List<CategoryModel>>().future),
           ],
         ),
       );

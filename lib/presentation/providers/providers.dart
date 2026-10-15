@@ -84,13 +84,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   void _invalidateUserData() {
-    ref.invalidate(cartProvider);
-    ref.invalidate(myBookingsProvider);
-    ref.invalidate(addressListProvider);
-    ref.invalidate(notificationListProvider);
-    ref.invalidate(unreadNotificationCountProvider);
-    ref.invalidate(paymentListProvider);
-    ref.invalidate(quotationListProvider);
+    Future.microtask(() {
+      ref.invalidate(cartProvider);
+      ref.invalidate(myBookingsProvider);
+      ref.invalidate(addressListProvider);
+      ref.invalidate(notificationListProvider);
+      ref.invalidate(unreadNotificationCountProvider);
+      ref.invalidate(paymentListProvider);
+      ref.invalidate(quotationListProvider);
+    });
   }
 
   Future<void> bootstrap() async {

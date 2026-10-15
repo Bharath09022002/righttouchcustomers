@@ -124,12 +124,30 @@ BookingModel createFakeBooking({
   );
 }
 
+ProductModel createFakeProduct({
+  String id = 'prod_1',
+  String name = 'Solar Inverter 5kW',
+  num price = 45000,
+  num mrp = 52000,
+  bool quoteRequired = false,
+}) {
+  return ProductModel(
+    id: id,
+    name: name,
+    price: price,
+    mrp: mrp,
+    quoteRequired: quoteRequired,
+    brand: 'Luminous',
+  );
+}
+
 /// Baseline standard provider overrides
 List<Override> createDefaultOverrides({
   UserModel? user,
   AddressModel? selectedAddress,
   List<CategoryModel>? categories,
   List<ServiceModel>? services,
+  List<ProductModel>? products,
   List<CartItemModel>? cartItems,
   List<BookingModel>? bookings,
   int unreadNotifications = 0,
@@ -137,6 +155,7 @@ List<Override> createDefaultOverrides({
   final addr = selectedAddress ?? createFakeAddress();
   final catList = categories ?? [createFakeCategory()];
   final svcList = services ?? [createFakeService()];
+  final prodList = products ?? [createFakeProduct()];
   final cartList = cartItems ?? [createFakeCartItem()];
   final bookingList = bookings ?? [createFakeBooking()];
 
@@ -146,6 +165,7 @@ List<Override> createDefaultOverrides({
     cartProvider.overrideWith((ref) async => cartList),
     categoryListProvider.overrideWith((ref) async => catList),
     serviceListProvider.overrideWith((ref) async => svcList),
+    productListProvider.overrideWith((ref) async => prodList),
     addressListProvider.overrideWith((ref) async => [addr]),
     myBookingsProvider.overrideWith((ref) async => bookingList),
     bookingDetailProvider.overrideWith((ref, id) async {

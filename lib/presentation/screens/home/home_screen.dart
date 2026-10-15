@@ -6,6 +6,7 @@ import '../../providers/providers.dart';
 import '../../widgets/right_touch_header.dart';
 import '../../../core/widgets/app_image.dart';
 import '../../../data/models/models.dart';
+import '../../../widgets/skeleton.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +20,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoryListProvider);
+    final productsAsync = ref.watch(productListProvider);
     final selectedAddress = ref.watch(selectedAddressProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -30,6 +32,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onRefresh: () async {
           ref.invalidate(categoryListProvider);
           ref.invalidate(serviceListProvider);
+          ref.invalidate(productListProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -182,6 +185,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildServicesGrid(context, categoriesAsync, isDark),
               ),
+
+              const SizedBox(height: 22),
+
+              // 5b. FEATURED PRODUCTS (HORIZONTAL LIST, MAX 6-8)
+              _buildHomeProductsSection(context, productsAsync, isDark),
 
               const SizedBox(height: 20),
 
@@ -808,6 +816,275 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // FEATURED PRODUCTS SECTION (MAX 6-8, HORIZONTAL LIST)
+  // ---------------------------------------------------------------------------
+  Widget _buildHomeProductsSection(
+    BuildContext context,
+    AsyncValue<List<ProductModel>> productsAsync,
+    bool isDark,
+  ) {
+    return productsAsync.when(
+      loading: () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Skeleton(width: 140, height: 22, borderRadius: 6),
+                Skeleton(width: 60, height: 18, borderRadius: 6),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 224,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: 4,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, __) => const Skeleton(
+                width: 156,
+                height: 224,
+                borderRadius: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (products) {
+        if (products.isEmpty) return const SizedBox.shrink();
+        final displayProducts = products.take(8).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontFamily: 'sans-serif',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Featured ',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const TextSpan(
+                            text: 'Products',
+                            style: TextStyle(color: Color(0xFF16A34A)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => context.push('/products'),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          'View All',
+                          style: TextStyle(
+                            color: Color(0xFF16A34A),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(width: 2),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Color(0xFF16A34A),
+                          size: 15,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 236,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                itemCount: displayProducts.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final p = displayProducts[index];
+                  return _buildHomeProductCard(context, p, isDark);
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHomeProductCard(BuildContext context, ProductModel p, bool isDark) {
+    final hasPrice = p.price != null && p.price! > 0 && !p.quoteRequired;
+
+    return Semantics(
+      button: true,
+      label: 'Product: ${p.name}',
+      child: InkWell(
+        onTap: () => context.push('/product/${p.id}'),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 156,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x06000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product Image with rounded top
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                child: Container(
+                  height: 105,
+                  width: double.infinity,
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                  child: AppImage(
+                    url: p.image,
+                    height: 105,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorWidget: Center(
+                      child: Icon(
+                        Icons.inventory_2_outlined,
+                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                        size: 32,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Info Area
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (p.brand != null && p.brand!.isNotEmpty)
+                            Text(
+                              p.brand!.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF64748B),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          const SizedBox(height: 2),
+                          Text(
+                            p.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Price or Request Quote Badge
+                      if (!hasPrice)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF86EFAC)),
+                          ),
+                          child: const Text(
+                            'Request quote',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF16A34A),
+                            ),
+                          ),
+                        )
+                      else
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '₹${p.price!.toInt()}',
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                ),
+                              ),
+                              if (p.mrp != null && p.mrp! > p.price!) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  '₹${p.mrp!.toInt()}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Color(0xFF94A3B8),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
