@@ -102,6 +102,8 @@ CartItemModel createFakeCartItem({
   num price = 1199,
   num originalPrice = 1499,
   int qty = 1,
+  String? image,
+  String? duration,
 }) {
   return CartItemModel(
     id: id,
@@ -111,6 +113,8 @@ CartItemModel createFakeCartItem({
     price: price,
     originalPrice: originalPrice,
     qty: qty,
+    image: image,
+    duration: duration,
   );
 }
 

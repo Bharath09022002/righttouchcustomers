@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:righttouch/data/models/models.dart';
 import 'package:righttouch/presentation/providers/providers.dart';
@@ -194,6 +193,63 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(CartScreen), findsOneWidget);
+    });
+
+    testWidgets('Cart item decrement at qty 1 shows confirmation dialog', (tester) async {
+      final fakeCart = [
+        createFakeCartItem(itemId: 'svc_test', name: 'Test AC Repair', qty: 1, price: 899),
+      ];
+
+      await tester.pumpWidget(
+        createTestApp(
+          screen: const CartScreen(),
+          route: '/cart',
+          overrides: [
+            ...createDefaultOverrides(cartItems: fakeCart),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test AC Repair'), findsOneWidget);
+      expect(find.byIcon(Icons.remove), findsOneWidget);
+
+      // Tap decrement
+      await tester.tap(find.byIcon(Icons.remove));
+      await tester.pumpAndSettle();
+
+      // Verify AlertDialog appears
+      expect(find.text('Remove Item'), findsOneWidget);
+      expect(find.text('Are you sure you want to remove this item from your cart?'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Remove'), findsOneWidget);
+
+      // Tap Cancel
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Remove Item'), findsNothing);
+    });
+
+    testWidgets('Cart item renders appropriate fallback icons for service and product', (tester) async {
+      final fakeCart = [
+        createFakeCartItem(id: 'c1', itemId: 'svc_test', name: 'Test AC Repair', itemType: 'service', image: null),
+        createFakeCartItem(id: 'c2', itemId: 'prod_test', name: 'Test Filter', itemType: 'product', image: null),
+      ];
+
+      await tester.pumpWidget(
+        createTestApp(
+          screen: const CartScreen(),
+          route: '/cart',
+          overrides: [
+            ...createDefaultOverrides(cartItems: fakeCart),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.build_circle_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
     });
   });
 

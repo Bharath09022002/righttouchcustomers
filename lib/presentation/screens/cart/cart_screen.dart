@@ -130,6 +130,61 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     );
   }
 
+  Future<void> _handleDecrement(CartItemModel it) async {
+    HapticFeedback.lightImpact();
+    if (it.qty <= 1) {
+      final shouldRemove = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            'Remove Item',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+          ),
+          content: const Text(
+            'Are you sure you want to remove this item from your cart?',
+            style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      );
+      if (shouldRemove != true) return;
+      try {
+        await ref.read(cartRepoProvider).remove(it.id);
+        ref.invalidate(cartProvider);
+      } catch (e) {
+        if (mounted) {
+          final appErr = mapException(e);
+          showError(context, title: 'Error', message: appErr.userMessage);
+        }
+      }
+    } else {
+      try {
+        await ref.read(cartRepoProvider).updateQty(it.id, it.qty - 1);
+        ref.invalidate(cartProvider);
+      } catch (e) {
+        if (mounted) {
+          final appErr = mapException(e);
+          showError(context, title: 'Error', message: appErr.userMessage);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
@@ -475,6 +530,15 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               width: 60,
               height: 60,
               fit: BoxFit.contain,
+              errorWidget: Center(
+                child: Icon(
+                  it.itemType.toUpperCase() == 'PRODUCT'
+                      ? Icons.inventory_2_outlined
+                      : Icons.build_circle_outlined,
+                  color: const Color(0xFF94A3B8),
+                  size: 26,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -518,7 +582,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     if (it.duration != null && it.duration!.isNotEmpty)
                       Text(
                         it.duration!,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFF64748B),
@@ -529,7 +593,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  it.price != null ? '₹${it.price!.toInt()}' : '₹1499',
+                  it.price != null ? '₹${it.price!.toInt()}' : '',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -553,22 +617,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   button: true,
                   label: 'Decrease quantity',
                   child: InkWell(
-                    onTap: () async {
-                      HapticFeedback.lightImpact();
-                      try {
-                        if (it.qty <= 1) {
-                          await ref.read(cartRepoProvider).remove(it.id);
-                        } else {
-                          await ref.read(cartRepoProvider).updateQty(it.id, it.qty - 1);
-                        }
-                        ref.invalidate(cartProvider);
-                      } catch (e) {
-                        if (mounted) {
-                          final appErr = mapException(e);
-                          showError(context, title: 'Error', message: appErr.userMessage);
-                        }
-                      }
-                    },
+                    onTap: () => _handleDecrement(it),
                     child: const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       child: Icon(Icons.remove, color: Colors.white, size: 17),
