@@ -71,7 +71,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                   await launchUrl(uri);
                 } else {
                   Clipboard.setData(ClipboardData(text: cleanPhone));
-                  if (context.mounted) {
+                  if (mounted) {
                     showSuccess(context, title: 'Number Copied', message: 'Support helpline copied to clipboard');
                   }
                 }
@@ -97,7 +97,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                   await launchUrl(uri);
                 } else {
                   Clipboard.setData(const ClipboardData(text: Env.supportEmail));
-                  if (context.mounted) {
+                  if (mounted) {
                     showSuccess(context, title: 'Email Copied', message: 'Support email copied to clipboard');
                   }
                 }
