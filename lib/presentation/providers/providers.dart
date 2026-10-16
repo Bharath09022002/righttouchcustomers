@@ -7,6 +7,7 @@ import '../../core/storage/local_cache.dart';
 import '../../data/datasources/remote_gateway.dart';
 import '../../data/models/models.dart';
 import '../../data/repositories/repositories.dart';
+import '../../core/services/notification_service.dart';
 
 // ---------- infra ----------
 final tokenStorageProvider = Provider<TokenStorage>((_) => TokenStorage());
@@ -113,6 +114,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
                 user: UserModel.fromJson(m.containsKey('user') ? m['user'] : d),
                 isGuest: false,
                 loading: false);
+            NotificationService.instance.syncCurrentToken();
           } else {
             // Access token dead → try silent refresh before forcing login.
             final refreshed = await refreshSession();
@@ -213,6 +215,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         user: s.user,
       );
       _invalidateUserData();
+      NotificationService.instance.syncCurrentToken();
       return null;
     } catch (e) {
       state = state.copyWith(loading: false);
@@ -249,6 +252,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout({bool allDevices = false}) async {
     try {
+      await NotificationService.instance.unregisterToken();
       if (allDevices) {
         await ref.read(gatewayProvider).logoutAll();
       } else {

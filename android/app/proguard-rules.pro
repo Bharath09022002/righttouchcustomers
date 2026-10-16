@@ -12,3 +12,9 @@
 # Fix for R8 Missing Play Core classes and Flutter deferred components
 -dontwarn com.google.android.play.core.**
 -dontwarn io.flutter.embedding.engine.deferredcomponents.**
+
+# Firebase & Google Play Services
+-dontwarn com.google.firebase.**
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.android.gms.**
+-keep class com.google.android.gms.** { *; }

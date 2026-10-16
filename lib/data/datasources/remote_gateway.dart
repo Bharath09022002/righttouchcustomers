@@ -127,11 +127,34 @@ class RemoteGateway {
       api.post(ApiEndpoints.cartAdd, {'itemId': itemId, 'itemType': type, 'quantity': qty});
   Future<ApiResult<dynamic>> myCart() => api.get(ApiEndpoints.myCart);
   Future<ApiResult<dynamic>> cartUpdate(Map<String, dynamic> body) async {
+    // 1. Try PUT /api/user/cart/update
     final res = await api.put(ApiEndpoints.cartUpdate, body);
-    if (res is ApiErr && res.statusCode == 404 && (body['id'] != null || body['cartItemId'] != null)) {
-      final cid = (body['id'] ?? body['cartItemId']).toString();
-      return api.put(ApiEndpoints.cartItemUpdate(cid), body);
+    if (res is ApiOk) return res;
+
+    // 2. Try PUT /api/user/cart/:id with cartItemId / id
+    final cid = (body['cartItemId'] ?? body['id'])?.toString();
+    if (cid != null && cid.isNotEmpty) {
+      final res2 = await api.put(ApiEndpoints.cartItemUpdate(cid), body);
+      if (res2 is ApiOk) return res2;
     }
+
+    // 3. Try PUT /api/user/cart/:id with itemId
+    final iid = body['itemId']?.toString();
+    if (iid != null && iid.isNotEmpty && iid != cid) {
+      final res3 = await api.put(ApiEndpoints.cartItemUpdate(iid), body);
+      if (res3 is ApiOk) return res3;
+    }
+
+    // 4. Fallback: try cartAdd
+    if (iid != null && iid.isNotEmpty) {
+      final resAdd = await api.post(ApiEndpoints.cartAdd, {
+        'itemId': iid,
+        'itemType': body['itemType'] ?? 'service',
+        'quantity': body['quantity'] ?? 1,
+      });
+      if (resAdd is ApiOk) return resAdd;
+    }
+
     return res;
   }
   Future<ApiResult<dynamic>> cartRemove(String id) async {
@@ -216,8 +239,8 @@ class RemoteGateway {
   Future<ApiResult<dynamic>> markRead(String id) => api.patch(ApiEndpoints.notifRead(id), {});
   Future<ApiResult<dynamic>> registerDevice(Map<String, dynamic> body) =>
       api.post(ApiEndpoints.deviceToken, body);
-  Future<ApiResult<dynamic>> deleteDeviceToken() =>
-      api.delete(ApiEndpoints.deviceToken);
+  Future<ApiResult<dynamic>> deleteDeviceToken([Map<String, dynamic>? body]) =>
+      api.delete(ApiEndpoints.deviceToken, body);
   Future<ApiResult<dynamic>> updatePermissions(Map<String, dynamic> body) =>
       api.put(ApiEndpoints.permissions, body);
 }

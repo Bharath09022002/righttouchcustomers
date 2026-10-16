@@ -307,7 +307,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
                   children: [
-                    // Top Status Row: [pending pill] and [ID: ...] (Matching Image 2)
+                    // Top Status Row: [Pending pill]
                     Padding(
                       padding: const EdgeInsets.only(bottom: 14),
                       child: Row(
@@ -320,33 +320,14 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                               border: Border.all(color: statusBorder),
                             ),
                             child: Text(
-                              b.status.toLowerCase(),
+                              b.status.isNotEmpty
+                                  ? (b.status[0].toUpperCase() + b.status.substring(1).toLowerCase())
+                                  : 'Pending',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                                 color: statusColor,
                               ),
-                            ),
-                          ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: b.id));
-                              showSuccess(context, title: 'Copied', message: 'Booking ID copied to clipboard');
-                            },
-                            child: Row(
-                              children: [
-                                Text(
-                                  'ID: ${b.id.length > 20 ? b.id.substring(0, 20) : b.id}',
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
-                                    color: Color(0xFF64748B),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF94A3B8)),
-                              ],
                             ),
                           ),
                         ],

@@ -23,7 +23,7 @@ Future<void> showServicePreview({
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Dismiss',
-    barrierColor: const Color(0xB8000000), // ~72% black overlay
+    barrierColor: const Color(0x66000000), // Clean soft backdrop overlay
     transitionDuration: const Duration(milliseconds: 260),
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       return ServicePreviewDialog(
@@ -203,17 +203,17 @@ class _ServicePreviewDialogState
   Widget _buildMediaPreviewCard(ServiceModel s) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E232B),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0x1FFFFFFF),
+          color: const Color(0xFFE2E8F0),
           width: 1.2,
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x66000000),
-            blurRadius: 28,
-            offset: Offset(0, 14),
+            color: Color(0x14000000),
+            blurRadius: 24,
+            offset: Offset(0, 10),
           ),
         ],
       ),
@@ -231,7 +231,7 @@ class _ServicePreviewDialogState
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
+                    color: const Color(0xFFF0FDF4),
                     shape: BoxShape.circle,
                     border: Border.all(color: const Color(0xFF10B981), width: 1.8),
                   ),
@@ -260,7 +260,7 @@ class _ServicePreviewDialogState
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: Color(0xFF0F172A),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -0.2,
@@ -287,7 +287,7 @@ class _ServicePreviewDialogState
                           Text(
                             s.warranty,
                             style: const TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: Color(0xFF64748B),
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
                             ),
@@ -306,13 +306,13 @@ class _ServicePreviewDialogState
                     width: 32,
                     height: 32,
                     decoration: const BoxDecoration(
-                      color: Color(0x14FFFFFF),
+                      color: Color(0xFFF1F5F9),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.close_rounded,
                       size: 18,
-                      color: Colors.white70,
+                      color: Color(0xFF64748B),
                     ),
                   ),
                 ),
@@ -326,31 +326,11 @@ class _ServicePreviewDialogState
               Container(
                 height: 210,
                 width: double.infinity,
-                color: const Color(0xFF0F172A),
+                color: const Color(0xFFF8FAFC),
                 child: AppImage(
                   url: s.image,
                   fit: BoxFit.contain,
                   errorWidget: _fallbackMedia(),
-                ),
-              ),
-
-              // Gradient vignette on bottom for contrast
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 60,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Color(0xF21E232B),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
                 ),
               ),
 
@@ -361,9 +341,16 @@ class _ServicePreviewDialogState
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xA6000000),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0F000000),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -373,7 +360,7 @@ class _ServicePreviewDialogState
                       Text(
                         s.rating.toStringAsFixed(1),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF0F172A),
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
@@ -381,7 +368,7 @@ class _ServicePreviewDialogState
                       Text(
                         ' (${s.ratingCount})',
                         style: const TextStyle(
-                          color: Colors.white70,
+                          color: Color(0xFF64748B),
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -398,18 +385,19 @@ class _ServicePreviewDialogState
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0x99000000),
+                    color: const Color(0xFFFFFBEB),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.bolt_rounded, size: 13, color: Color(0xFFFBBF24)),
+                      Icon(Icons.bolt_rounded, size: 13, color: Color(0xFFD97706)),
                       SizedBox(width: 3),
                       Text(
                         'Verified Pro',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF92400E),
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -432,7 +420,7 @@ class _ServicePreviewDialogState
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF0F172A),
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     height: 1.3,
@@ -445,7 +433,7 @@ class _ServicePreviewDialogState
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF94A3B8),
+                      color: Color(0xFF64748B),
                       fontSize: 11.5,
                       height: 1.3,
                     ),
@@ -469,17 +457,17 @@ class _ServicePreviewDialogState
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF222730),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: const Color(0x1FFFFFFF),
+          color: const Color(0xFFE2E8F0),
           width: 1.2,
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x66000000),
+            color: Color(0x14000000),
             blurRadius: 24,
-            offset: Offset(0, 12),
+            offset: Offset(0, 10),
           ),
         ],
       ),
@@ -493,7 +481,7 @@ class _ServicePreviewDialogState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: const BoxDecoration(
-              color: Color(0xFF1B2027),
+              color: Color(0xFFF8FAFC),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -510,7 +498,7 @@ class _ServicePreviewDialogState
                         Text(
                           unitPrice != null ? '₹$unitPrice' : 'Get a Quote',
                           style: const TextStyle(
-                            color: Color(0xFF22C55E), // Vivid neon emerald
+                            color: Color(0xFF16A34A),
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.5,
@@ -521,7 +509,7 @@ class _ServicePreviewDialogState
                           Text(
                             '₹$unitMrp',
                             style: const TextStyle(
-                              color: Color(0xFF64748B),
+                              color: Color(0xFF94A3B8),
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               decoration: TextDecoration.lineThrough,
@@ -534,7 +522,7 @@ class _ServicePreviewDialogState
                     const Text(
                       'Standard Service Fee',
                       style: TextStyle(
-                        color: Color(0xFF94A3B8),
+                        color: Color(0xFF64748B),
                         fontSize: 10.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -551,9 +539,9 @@ class _ServicePreviewDialogState
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
+                        color: const Color(0xFFF0FDF4),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF334155), width: 1.2),
+                        border: Border.all(color: const Color(0xFFBBF7D0), width: 1.2),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -561,7 +549,7 @@ class _ServicePreviewDialogState
                           const Icon(
                             Icons.schedule_rounded,
                             size: 14,
-                            color: Color(0xFF38BDF8), // Sky blue icon
+                            color: Color(0xFF16A34A),
                           ),
                           const SizedBox(width: 5),
                           Flexible(
@@ -570,7 +558,7 @@ class _ServicePreviewDialogState
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Color(0xFFF1F5F9),
+                                color: Color(0xFF15803D),
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.2,
@@ -586,7 +574,7 @@ class _ServicePreviewDialogState
             ),
           ),
 
-          const Divider(color: Color(0x14FFFFFF), height: 1, thickness: 1),
+          const Divider(color: Color(0xFFE2E8F0), height: 1, thickness: 1),
 
           // ---------------------------------------------------------
           // ADD TO CART SECTION (Quantity + Primary Action Button)
@@ -599,9 +587,9 @@ class _ServicePreviewDialogState
                 Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141920),
+                    color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0x1AFFFFFF)),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -609,15 +597,15 @@ class _ServicePreviewDialogState
                       IconButton(
                         onPressed: _quantity > 1 ? _decrement : null,
                         icon: const Icon(Icons.remove, size: 16),
-                        color: Colors.white70,
-                        disabledColor: Colors.white24,
+                        color: const Color(0xFF334155),
+                        disabledColor: const Color(0xFFCBD5E1),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(minWidth: 34, minHeight: 44),
                       ),
                       Text(
                         '$_quantity',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF0F172A),
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                         ),
@@ -625,8 +613,8 @@ class _ServicePreviewDialogState
                       IconButton(
                         onPressed: _quantity < 10 ? _increment : null,
                         icon: const Icon(Icons.add, size: 16),
-                        color: Colors.white70,
-                        disabledColor: Colors.white24,
+                        color: const Color(0xFF334155),
+                        disabledColor: const Color(0xFFCBD5E1),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(minWidth: 34, minHeight: 44),
                       ),
@@ -737,8 +725,8 @@ class _ServicePreviewDialogState
     bool isDestructive = false,
     required VoidCallback onTap,
   }) {
-    final textColor = isDestructive ? const Color(0xFFEF4444) : Colors.white;
-    final iconColor = isDestructive ? const Color(0xFFEF4444) : Colors.white;
+    final textColor = isDestructive ? const Color(0xFFEF4444) : const Color(0xFF0F172A);
+    final iconColor = isDestructive ? const Color(0xFFEF4444) : const Color(0xFF475569);
 
     return Material(
       color: Colors.transparent,
@@ -771,7 +759,7 @@ class _ServicePreviewDialogState
                       Text(
                         subtitle,
                         style: const TextStyle(
-                          color: Color(0xFF94A3B8),
+                          color: Color(0xFF64748B),
                           fontSize: 11,
                         ),
                       ),
@@ -783,7 +771,7 @@ class _ServicePreviewDialogState
                 const Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 13,
-                  color: Colors.white24,
+                  color: Color(0xFFCBD5E1),
                 ),
             ],
           ),
@@ -798,9 +786,9 @@ class _ServicePreviewDialogState
         width: 80,
         height: 80,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: const Color(0xFFF1F5F9),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
         child: const Icon(
           Icons.build_circle_outlined,

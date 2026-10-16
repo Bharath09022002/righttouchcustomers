@@ -139,7 +139,7 @@ class GuestLoginPlaceholder extends StatelessWidget {
                       if (onSecondaryAction != null) {
                         onSecondaryAction!();
                       } else {
-                        context.go('/');
+                        context.go('/services');
                       }
                     },
                     style: OutlinedButton.styleFrom(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:righttouch/presentation/screens/booking/bookings_screen.dart';
 import 'package:righttouch/presentation/screens/cart/cart_screen.dart';
 import 'package:righttouch/presentation/widgets/right_touch_header.dart';
 import 'test_harness.dart';
@@ -115,16 +114,9 @@ void main() {
       await tester.tap(find.text('Go to Cart'));
       await tester.pumpAndSettle();
 
-      // Pushed /cart MUST display back arrow
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
-
-      // Tap back arrow
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
-      await tester.pumpAndSettle();
-
-      // Back on root screen
-      expect(find.text('Go to Cart'), findsOneWidget);
-      expect(find.byType(CartScreen), findsNothing);
+      // User requested CartScreen to remove return icon and move My Cart to left
+      expect(find.byIcon(Icons.arrow_back_rounded), findsNothing);
+      expect(find.text('My Cart'), findsOneWidget);
     });
 
     testWidgets('Cart rendered as tab /cart-tab does NOT show back arrow', (tester) async {

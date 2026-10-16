@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
+import 'core/services/notification_service.dart';
 import 'presentation/providers/providers.dart';
 
 Future<void> main() async {
@@ -73,6 +74,11 @@ Future<void> main() async {
   final api = container.read(apiClientProvider);
   api.wakeUp().then((warm) {
     if (kDebugMode) debugPrint('[Main] Backend warm: $warm');
+  });
+
+  // Push Notifications (Firebase Cloud Messaging)
+  NotificationService.instance.initialize(container).catchError((e) {
+    debugPrint('[Main] Notification init error: $e');
   });
 
   runApp(

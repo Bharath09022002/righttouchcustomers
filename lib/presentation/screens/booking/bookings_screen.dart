@@ -135,12 +135,13 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
       return Scaffold(
         backgroundColor: Colors.white,
         appBar: const RightTouchTopAppBar(title: 'Bookings'),
-        body: const GuestLoginPlaceholder(
+        body: GuestLoginPlaceholder(
           icon: Icons.calendar_month_outlined,
           title: 'Sign In to View Bookings',
           subtitle: 'Please log in with your phone number to track active services, view assigned technician details, and service history.',
           primaryButtonText: 'Log In / Sign Up',
           secondaryButtonText: 'Explore Services',
+          onSecondaryAction: () => context.go('/services'),
         ),
       );
     }

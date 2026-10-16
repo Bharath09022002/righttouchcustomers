@@ -199,14 +199,128 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
 
             SafeArea(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _buildFormScreen(isSignup: false),
-                  _buildFormScreen(isSignup: true),
-                ],
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 14),
+
+                        // 1. BRAND LOGO (Right Touch lightbulb + text - Fixed)
+                        const Center(
+                          child: BrandLogo(width: 175),
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        // 2. HEADING & SUBHEADING (Dynamic based on selected card)
+                        const Text(
+                          'Welcome to Right Touch',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.4,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Text(
+                            _isSignup
+                                ? 'Create an account to get started'
+                                : 'Sign in to continue to your account',
+                            key: ValueKey<bool>(_isSignup),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        // 3. SEGMENTED TOGGLE (Login | Sign up) - Swipeable toggle
+                        Builder(
+                          builder: (context) {
+                            double dragDistance = 0;
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onHorizontalDragStart: (_) => dragDistance = 0,
+                              onHorizontalDragUpdate: (details) =>
+                                  dragDistance += details.primaryDelta ?? 0,
+                              onHorizontalDragEnd: (details) {
+                                final velocity = details.primaryVelocity ?? 0;
+                                if (velocity < -80 || dragDistance < -30) {
+                                  _onTabSelected(1);
+                                } else if (velocity > 80 || dragDistance > 30) {
+                                  _onTabSelected(0);
+                                }
+                              },
+                              child: Container(
+                                height: 52,
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildSegmentTab(
+                                        label: 'Login',
+                                        isSelected: !_isSignup,
+                                        onTap: () => _onTabSelected(0),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _buildSegmentTab(
+                                        label: 'Sign up',
+                                        isSelected: _isSignup,
+                                        onTap: () => _onTabSelected(1),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // 4. SWIPEABLE LOGIN / REGISTER FORM CARD
+                        SizedBox(
+                          height: 380,
+                          child: PageView(
+                            controller: _pageController,
+                            onPageChanged: _onPageChanged,
+                            physics: const BouncingScrollPhysics(),
+                            children: [
+                              _buildFormCard(isSignup: false),
+                              _buildFormCard(isSignup: true),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // 5. TERMS & PRIVACY FOOTER (Fixed)
+                        _buildFooter(),
+
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -215,81 +329,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  /// Single scrollable form page for either Login (index 0) or Sign up (index 1)
-  Widget _buildFormScreen({required bool isSignup}) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 14),
-
-              // 1. BRAND LOGO (Right Touch lightbulb + text)
-              Center(
-                child: const BrandLogo(width: 175),
-              ),
-
-              const SizedBox(height: 22),
-
-              // 2. HEADING & SUBHEADING
-              const Text(
-                'Welcome to Right Touch',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.4,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                isSignup
-                    ? 'Create an account to get started'
-                    : 'Sign in to continue to your account',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              // 3. SEGMENTED TOGGLE (Login | Sign up) with active green indicator
-              Container(
-                height: 52,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildSegmentTab(
-                        label: 'Login',
-                        isSelected: !isSignup,
-                        onTap: () => _onTabSelected(0),
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildSegmentTab(
-                        label: 'Sign up',
-                        isSelected: isSignup,
-                        onTap: () => _onTabSelected(1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
+  /// Inner swipeable card content for either Login (index 0) or Sign up (index 1)
+  Widget _buildFormCard({required bool isSignup}) {
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 8),
 
               // 4. MOBILE NUMBER INPUT
               const Text(
@@ -539,78 +586,76 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 26),
-
-              // 9. TERMS & PRIVACY FOOTER (Green underline links)
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'By continuing, you agree to our',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: _showTermsDialog,
-                          child: const Text(
-                            'Terms',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF00A859),
-                              fontWeight: FontWeight.w700,
-                              decoration: TextDecoration.underline,
-                              decorationColor: Color(0xFF00A859),
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          ' & ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _showTermsDialog,
-                          child: const Text(
-                            'Privacy Policy',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF00A859),
-                              fontWeight: FontWeight.w700,
-                              decoration: TextDecoration.underline,
-                              decorationColor: Color(0xFF00A859),
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          '.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
             ],
           ),
-        ),
+    );
+  }
+
+  /// Terms & Privacy policy footer
+  Widget _buildFooter() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'By continuing, you agree to our',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: _showTermsDialog,
+                child: const Text(
+                  'Terms',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF00A859),
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                    decorationColor: Color(0xFF00A859),
+                  ),
+                ),
+              ),
+              const Text(
+                ' & ',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              GestureDetector(
+                onTap: _showTermsDialog,
+                child: const Text(
+                  'Privacy Policy',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF00A859),
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                    decorationColor: Color(0xFF00A859),
+                  ),
+                ),
+              ),
+              const Text(
+                '.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

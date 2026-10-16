@@ -609,9 +609,35 @@ class CartRepository {
     if (r is ApiErr) throw ApiException(r.message);
   }
 
-  Future<void> updateQty(String id, int qty) async {
-    final r = await gw.cartUpdate({'cartItemId': id, 'id': id, 'quantity': qty});
-    if (r is ApiErr) throw ApiException(r.message);
+  Future<void> updateQty(
+    String id,
+    int qty, {
+    String? itemId,
+    String? itemType,
+  }) async {
+    final effectiveItemId = (itemId != null && itemId.isNotEmpty) ? itemId : id;
+    final type = (itemType != null && itemType.isNotEmpty) ? itemType.toLowerCase() : 'service';
+    final body = <String, dynamic>{
+      'cartItemId': id,
+      'id': id,
+      'itemId': effectiveItemId,
+      'itemType': type,
+      'quantity': qty,
+      'qty': qty,
+    };
+    if (kDebugMode) {
+      debugPrint('[Cart] updateQty → cartItemId=$id, itemId=$effectiveItemId, type=$type, qty=$qty');
+    }
+    final r = await gw.cartUpdate(body);
+    if (r is ApiErr) {
+      if (kDebugMode) {
+        debugPrint('[Cart] updateQty FAILED: ${r.message} (${r.statusCode})');
+      }
+      throw ApiException(r.message, r.statusCode);
+    }
+    if (kDebugMode) {
+      debugPrint('[Cart] updateQty SUCCESS for $effectiveItemId (qty: $qty)');
+    }
   }
 
   Future<void> checkout(Map<String, dynamic> b) async {
@@ -819,5 +845,25 @@ class SupportRepository {
       return {'data': d};
     }
     return null;
+  }
+
+  Future<void> registerDeviceToken(String token) async {
+    try {
+      await gw.registerDevice({
+        'token': token,
+        'fcmToken': token,
+        'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+        'deviceId': 'default',
+      });
+    } catch (_) {}
+  }
+
+  Future<void> deleteDeviceToken([String? token]) async {
+    try {
+      await gw.deleteDeviceToken({
+        if (token != null && token.isNotEmpty) 'fcmToken': token,
+        'deviceId': 'default',
+      });
+    } catch (_) {}
   }
 }

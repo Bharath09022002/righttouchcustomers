@@ -20,6 +20,7 @@ class CartScreen extends ConsumerStatefulWidget {
 
 class _CartScreenState extends ConsumerState<CartScreen> {
   final _tipController = TextEditingController();
+  String? _updatingId;
 
   @override
   void dispose() {
@@ -131,7 +132,36 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     );
   }
 
+  Future<void> _handleIncrement(CartItemModel it) async {
+    if (_updatingId != null) return;
+    if (it.qty >= 10) {
+      showError(context, title: 'Notice', message: 'Maximum quantity of 10 reached.');
+      return;
+    }
+    HapticFeedback.lightImpact();
+    setState(() => _updatingId = it.id);
+    try {
+      await ref.read(cartRepoProvider).updateQty(
+            it.id,
+            it.qty + 1,
+            itemId: it.itemId,
+            itemType: it.itemType,
+          );
+      ref.invalidate(cartProvider);
+    } catch (e) {
+      if (mounted) {
+        final appErr = mapException(e);
+        showError(context, title: 'Error', message: appErr.userMessage);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _updatingId = null);
+      }
+    }
+  }
+
   Future<void> _handleDecrement(CartItemModel it) async {
+    if (_updatingId != null) return;
     HapticFeedback.lightImpact();
     if (it.qty <= 1) {
       final shouldRemove = await showDialog<bool>(
@@ -164,6 +194,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         ),
       );
       if (shouldRemove != true) return;
+      setState(() => _updatingId = it.id);
       try {
         await ref.read(cartRepoProvider).remove(it.id);
         ref.invalidate(cartProvider);
@@ -172,15 +203,29 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           final appErr = mapException(e);
           showError(context, title: 'Error', message: appErr.userMessage);
         }
+      } finally {
+        if (mounted) {
+          setState(() => _updatingId = null);
+        }
       }
     } else {
+      setState(() => _updatingId = it.id);
       try {
-        await ref.read(cartRepoProvider).updateQty(it.id, it.qty - 1);
+        await ref.read(cartRepoProvider).updateQty(
+              it.id,
+              it.qty - 1,
+              itemId: it.itemId,
+              itemType: it.itemType,
+            );
         ref.invalidate(cartProvider);
       } catch (e) {
         if (mounted) {
           final appErr = mapException(e);
           showError(context, title: 'Error', message: appErr.userMessage);
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _updatingId = null);
         }
       }
     }
@@ -190,15 +235,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     if (auth.isGuest) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: Colors.white,
-        appBar: RightTouchTopAppBar(title: 'My Cart'),
+        appBar: const RightTouchTopAppBar(title: 'My Cart', showLeading: false),
         body: GuestLoginPlaceholder(
           icon: Icons.shopping_bag_outlined,
           title: 'Sign In to View Your Cart',
           subtitle: 'Please log in with your phone number to view your cart items, select address, and proceed to booking.',
           primaryButtonText: 'Log In to Continue',
           secondaryButtonText: 'Explore Services',
+          onSecondaryAction: () => context.go('/services'),
         ),
       );
     }
@@ -208,8 +254,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const RightTouchTopAppBar(title: 'My Cart'),
+      appBar: const RightTouchTopAppBar(title: 'My Cart', showLeading: false),
       body: cart.when(
+        skipLoadingOnReload: true,
         data: (items) {
           if (items.isEmpty) {
             return EmptyState(
@@ -621,60 +668,71 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ),
           const SizedBox(width: 8),
           // Green Stepper: [-] 1 [+]
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF00A859),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Semantics(
-                  button: true,
-                  label: 'Decrease quantity',
-                  child: InkWell(
-                    onTap: () => _handleDecrement(it),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: Icon(Icons.remove, color: Colors.white, size: 17),
-                    ),
-                  ),
+          Builder(
+            builder: (context) {
+              final isItemUpdating = _updatingId == it.id;
+              return Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00A859),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    '${it.qty}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Semantics(
+                      button: true,
+                      label: 'Decrease quantity',
+                      child: InkWell(
+                        onTap: isItemUpdating ? null : () => _handleDecrement(it),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Icon(
+                            Icons.remove,
+                            color: isItemUpdating ? Colors.white38 : Colors.white,
+                            size: 17,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Semantics(
-                  button: true,
-                  label: 'Increase quantity',
-                  child: InkWell(
-                    onTap: () async {
-                      HapticFeedback.lightImpact();
-                      try {
-                        await ref.read(cartRepoProvider).updateQty(it.id, it.qty + 1);
-                        ref.invalidate(cartProvider);
-                      } catch (e) {
-                        if (mounted) {
-                          final appErr = mapException(e);
-                          showError(context, title: 'Error', message: appErr.userMessage);
-                        }
-                      }
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: Icon(Icons.add, color: Colors.white, size: 17),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: isItemUpdating
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              '${it.qty}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                              ),
+                            ),
                     ),
-                  ),
+                    Semantics(
+                      button: true,
+                      label: 'Increase quantity',
+                      child: InkWell(
+                        onTap: isItemUpdating ? null : () => _handleIncrement(it),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Icon(
+                            Icons.add,
+                            color: isItemUpdating ? Colors.white38 : Colors.white,
+                            size: 17,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),

@@ -21,15 +21,23 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   CategoryModel? _selectedCategory;
   bool _initializedCategory = false;
   bool _showAll = false;
-  final String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Ensure global query is reset to show all services
+        ref.read(serviceQueryProvider.notifier).state = const ServiceQuery();
+      }
+    });
+  }
 
   void _selectCategory(CategoryModel? cat) {
     setState(() {
       _selectedCategory = cat;
       _showAll = false; // Reset to 10 on filter change
     });
-    ref.read(serviceQueryProvider.notifier).state =
-        ServiceQuery(_searchQuery, cat?.id);
   }
 
   void _bookService(ServiceModel s) {
