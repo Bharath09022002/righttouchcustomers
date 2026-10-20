@@ -95,20 +95,46 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   }
 
   Future<void> _handleRateService(BookingModel b) async {
+    // 1. Completion Gate
+    if (b.status.toLowerCase() != 'completed') {
+      showError(
+        context,
+        title: 'Rating Unavailable',
+        message: 'You can rate a service only after completion.',
+      );
+      return;
+    }
+
+    // 2. Check if already rated in customer history
+    final myRatings = ref.read(myRatingsProvider).valueOrNull ?? [];
+    final existingRating = myRatings.where((r) => r.bookingId == b.id).firstOrNull;
+
     await showReviewBottomSheet(
       context,
       bookingId: b.id,
       serviceTitle: b.serviceName ?? 'Service',
       technicianName: b.technicianName,
-      onSubmit: (rating, tags, comment) async {
+      bookingType: 'service',
+      isEditing: existingRating != null,
+      initialRating: existingRating?.rates ?? 5,
+      initialComment: existingRating?.comment ?? '',
+      onSubmit: (rates, comment) async {
         try {
-          final payload = {
-            'bookingId': b.id,
-            'rating': rating,
-            'tags': tags,
-            'review': comment,
-          };
-          await ref.read(supportRepoProvider).rating(payload);
+          if (existingRating != null) {
+            await ref.read(ratingRepoProvider).updateRating(
+              id: existingRating.id,
+              rates: rates,
+              comment: comment,
+            );
+          } else {
+            await ref.read(ratingRepoProvider).submitRating(
+              bookingId: b.id,
+              bookingType: 'service',
+              rates: rates,
+              comment: comment,
+            );
+          }
+          ref.invalidate(myRatingsProvider);
           return true;
         } catch (e) {
           if (mounted) {
@@ -119,6 +145,104 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         }
       },
     );
+  }
+
+  Future<void> _handlePayOnline(BookingModel b) async {
+    if (b.status.toLowerCase() != 'completed') {
+      showError(context, title: 'Payment Unavailable', message: 'Payment allowed only after service completion');
+      return;
+    }
+    final amountVal = b.amount?.toDouble() ?? 0.0;
+    if (amountVal < 1.0) {
+      showError(context, title: 'Invalid Amount', message: 'Minimum payment amount is ₹1');
+      return;
+    }
+    if ((b.paymentStatus ?? '').toLowerCase() == 'paid') {
+      showError(context, title: 'Already Paid', message: 'Booking already paid');
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      await ref.read(paymentRepoProvider).createOrder(b.id);
+      if (mounted) {
+        showSuccess(
+          context,
+          title: 'Payment Initiated',
+          message: 'Razorpay checkout order created successfully.',
+        );
+      }
+      ref.invalidate(bookingDetailProvider(widget.id));
+      ref.invalidate(paymentListProvider);
+    } catch (e) {
+      if (mounted) {
+        final appErr = mapException(e);
+        showError(context, title: 'Payment Failed', message: appErr.userMessage);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _handleDeclareCash(BookingModel b) async {
+    if (b.status.toLowerCase() != 'completed') {
+      showError(context, title: 'Cash Payment Unavailable', message: 'Payment allowed only after service completion');
+      return;
+    }
+    if ((b.paymentStatus ?? '').toLowerCase() == 'paid') {
+      showError(context, title: 'Already Paid', message: 'Booking already paid');
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Pay Cash to Technician?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        content: Text(
+          'Please confirm that you are handing ₹${b.amount?.toInt() ?? 0} in cash directly to ${b.technicianName ?? 'the service technician'}.',
+          style: const TextStyle(fontSize: 14, color: AppColors.grey700),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.grey600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF16A34A),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirm Cash Payment'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _busy = true);
+    try {
+      await ref.read(paymentRepoProvider).declareCash(b.id);
+      if (mounted) {
+        showSuccess(
+          context,
+          title: 'Cash Payment Recorded',
+          message: 'Cash payment submitted for technician confirmation.',
+        );
+      }
+      ref.invalidate(bookingDetailProvider(widget.id));
+      ref.invalidate(paymentListProvider);
+    } catch (e) {
+      if (mounted) {
+        final appErr = mapException(e);
+        showError(context, title: 'Cash Declaration Failed', message: appErr.userMessage);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   void _handleCall() {
@@ -620,6 +744,145 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                               ),
                             ],
                           ),
+
+                          // Payment Status Badge & Due Actions
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: (b.paymentStatus ?? '').toLowerCase() == 'paid'
+                                  ? const Color(0xFFECFDF5)
+                                  : ((b.paymentStatus ?? '').toLowerCase() == 'under_review'
+                                      ? const Color(0xFFFFFBEB)
+                                      : const Color(0xFFF8FAFC)),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: (b.paymentStatus ?? '').toLowerCase() == 'paid'
+                                    ? const Color(0xFFBBF7D0)
+                                    : ((b.paymentStatus ?? '').toLowerCase() == 'under_review'
+                                        ? const Color(0xFFFDE68A)
+                                        : const Color(0xFFE2E8F0)),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  (b.paymentStatus ?? '').toLowerCase() == 'paid'
+                                      ? Icons.check_circle_rounded
+                                      : ((b.paymentStatus ?? '').toLowerCase() == 'under_review'
+                                          ? Icons.hourglass_top_rounded
+                                          : Icons.payment_rounded),
+                                  size: 18,
+                                  color: (b.paymentStatus ?? '').toLowerCase() == 'paid'
+                                      ? const Color(0xFF16A34A)
+                                      : ((b.paymentStatus ?? '').toLowerCase() == 'under_review'
+                                          ? const Color(0xFFD97706)
+                                          : const Color(0xFF64748B)),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    (b.paymentStatus ?? '').toLowerCase() == 'paid'
+                                        ? 'Payment Completed (Paid)'
+                                        : ((b.paymentStatus ?? '').toLowerCase() == 'under_review'
+                                            ? 'Payment Under Review'
+                                            : 'Payment Status: ${(b.paymentStatus ?? '').isNotEmpty ? b.paymentStatus!.toUpperCase() : "PENDING"}'),
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: (b.paymentStatus ?? '').toLowerCase() == 'paid'
+                                          ? const Color(0xFF16A34A)
+                                          : ((b.paymentStatus ?? '').toLowerCase() == 'under_review'
+                                              ? const Color(0xFFB45309)
+                                              : const Color(0xFF334155)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // If completed and unpaid: provide Pay Online & Pay Cash buttons
+                          if (b.status.toLowerCase() == 'completed' && (b.paymentStatus ?? '').toLowerCase() != 'paid') ...[
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF16A34A),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      padding: const EdgeInsets.symmetric(vertical: 11),
+                                    ),
+                                    icon: const Icon(Icons.credit_card, size: 16),
+                                    label: const Text('Pay Online', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                                    onPressed: _busy ? null : () => _handlePayOnline(b),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF0F172A),
+                                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      padding: const EdgeInsets.symmetric(vertical: 11),
+                                    ),
+                                    icon: const Icon(Icons.payments_outlined, size: 16),
+                                    label: const Text('Pay Cash', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                                    onPressed: _busy ? null : () => _handleDeclareCash(b),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+
+                          // RightTouch Rewards Banner (Completed + Paid, 100 Coins = ₹1.00)
+                          if (b.status.toLowerCase() == 'completed' && (b.paymentStatus ?? '').toLowerCase() == 'paid') ...[
+                            Container(
+                              margin: const EdgeInsets.only(top: 14),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFFEF3C7), Color(0xFFFFFBEB)],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFFDE68A)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF59E0B),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.stars_rounded, color: Colors.white, size: 22),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '+${(amountVal * 1.5).round()} RightTouch Coins Earned!',
+                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF92400E)),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        const Text(
+                                          '100 Coins = ₹1.00 • Credited to your customer rewards',
+                                          style: TextStyle(fontSize: 11, color: Color(0xFFB45309)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -694,36 +957,58 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Rate & Review Button
+                    // Rate & Review Button (with completion and already-rated state)
                     Expanded(
-                      child: GestureDetector(
-                        onTap: () => _handleRateService(b),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.star_outline_rounded, size: 20, color: Color(0xFF0F172A)),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Rate & Review',
-                                  style: TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF0F172A),
-                                  ),
+                      child: Builder(
+                        builder: (context) {
+                          final myRatings = ref.watch(myRatingsProvider).valueOrNull ?? [];
+                          final hasRated = myRatings.any((r) => r.bookingId == b.id);
+                          final isCompleted = b.status.toLowerCase() == 'completed';
+
+                          return GestureDetector(
+                            onTap: () => _handleRateService(b),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: isCompleted
+                                    ? (hasRated ? const Color(0xFFECFDF5) : const Color(0xFFF8FAFC))
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isCompleted
+                                      ? (hasRated ? const Color(0xFFBBF7D0) : const Color(0xFFE2E8F0))
+                                      : const Color(0xFFE2E8F0),
                                 ),
-                              ],
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      hasRated ? Icons.star_rounded : Icons.star_outline_rounded,
+                                      size: 20,
+                                      color: hasRated
+                                          ? const Color(0xFFF59E0B)
+                                          : (isCompleted ? const Color(0xFF0F172A) : const Color(0xFF94A3B8)),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      hasRated
+                                          ? 'Edit Review'
+                                          : (isCompleted ? 'Rate & Review' : 'Rate (Completed)'),
+                                      style: TextStyle(
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: isCompleted ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ),
                   ],

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/ui/app_feedback.dart';
+import '../../../core/storage/local_cache.dart';
 import '../../providers/providers.dart';
 
 class SlotBookingScreen extends ConsumerStatefulWidget {
@@ -167,6 +168,7 @@ class _S extends ConsumerState<SlotBookingScreen> {
                 if (id != null) {
                   final picked = list.firstWhere((a) => a.id == id, orElse: () => list.first);
                   ref.read(selectedAddressProvider.notifier).state = picked;
+                  LocalCacheService.instance.cacheDefaultAddressId(picked.id);
                 }
               },
               child: Column(

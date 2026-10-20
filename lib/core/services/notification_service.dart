@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,12 +25,14 @@ class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
 
+  final FlutterLocalNotificationsPlugin _localNotifs = FlutterLocalNotificationsPlugin();
   ProviderContainer? _container;
   String? _currentToken;
   String? get currentToken => _currentToken;
   bool _initialized = false;
+  String _lastPermissionStatus = 'granted';
 
-  /// Initialize Firebase Messaging, permissions and listeners.
+  /// Initialize Firebase Messaging, local notifications, permissions and listeners.
   Future<void> initialize(ProviderContainer container) async {
     _container = container;
     if (_initialized) return;
@@ -39,10 +43,27 @@ class NotificationService {
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      // 2. Register Background Handler
+      // 2. Initialize Local Notifications for System Status Bar Display
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const iosInit = DarwinInitializationSettings();
+      await _localNotifs.initialize(
+        settings: const InitializationSettings(android: androidInit, iOS: iosInit),
+        onDidReceiveNotificationResponse: (response) {
+          if (response.payload != null && response.payload!.isNotEmpty) {
+            try {
+              final map = jsonDecode(response.payload!);
+              if (map is Map<String, dynamic>) {
+                _handleNotificationClick(map);
+              }
+            } catch (_) {}
+          }
+        },
+      );
+
+      // 3. Register Background Handler
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-      // 3. Request permissions (Android 13+ & iOS)
+      // 4. Request permissions (Android 13+ & iOS)
       final messaging = FirebaseMessaging.instance;
       final settings = await messaging.requestPermission(
         alert: true,
@@ -53,16 +74,20 @@ class NotificationService {
         provisional: false,
         sound: true,
       );
-      debugPrint('[FCM] Permission status: ${settings.authorizationStatus}');
+      _lastPermissionStatus = (settings.authorizationStatus == AuthorizationStatus.authorized ||
+              settings.authorizationStatus == AuthorizationStatus.provisional)
+          ? 'granted'
+          : 'denied';
+      debugPrint('[FCM] Permission status: ${settings.authorizationStatus} ($_lastPermissionStatus)');
 
-      // 4. Foreground notification presentation options (iOS)
+      // 5. Foreground notification presentation options (iOS)
       await messaging.setForegroundNotificationPresentationOptions(
         alert: true,
         badge: true,
         sound: true,
       );
 
-      // 5. Get and register FCM token
+      // 6. Get and register FCM token
       // ignore: deprecated_member_use
       _currentToken = await messaging.getToken();
       debugPrint('[FCM] Token: $_currentToken');
@@ -70,7 +95,7 @@ class NotificationService {
         _syncToken(container, _currentToken!);
       }
 
-      // 6. Token refresh listener
+      // 7. Token refresh listener
       // ignore: deprecated_member_use
       messaging.onTokenRefresh.listen((newToken) {
         debugPrint('[FCM] Token refreshed: $newToken');
@@ -78,26 +103,25 @@ class NotificationService {
         _syncToken(container, newToken);
       });
 
-      // 7. Foreground message listener
+      // 8. Foreground message listener -> Show Real System Notification
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         debugPrint('[FCM Foreground] ${message.notification?.title}: ${message.notification?.body}');
         
-        // Invalidate notification caches so UI updates immediately
         container.invalidate(unreadNotificationCountProvider);
         container.invalidate(notificationListProvider);
 
-        // Show in-app banner for foreground notification
         final notif = message.notification;
         if (notif != null) {
-          _showForegroundBanner(
-            title: notif.title ?? 'New Notification',
+          _showSystemNotification(
+            id: message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title: notif.title ?? 'RightTouch Alert',
             body: notif.body ?? '',
             data: message.data,
           );
         }
       });
 
-      // 8. User tapped notification when app was in background
+      // 9. User tapped notification when app was in background
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
         debugPrint('[FCM Opened App] ${message.data}');
         _handleNotificationClick(message.data);
@@ -116,7 +140,7 @@ class NotificationService {
     }
   }
 
-  /// Sync token to backend if user is authenticated
+  /// Sync token and permissions to backend if user is authenticated
   Future<void> _syncToken(ProviderContainer? container, String token) async {
     final c = container ?? _container;
     if (c == null) return;
@@ -124,7 +148,8 @@ class NotificationService {
       final auth = c.read(authProvider);
       if (auth.loggedIn && !auth.isGuest) {
         await c.read(supportRepoProvider).registerDeviceToken(token);
-        debugPrint('[FCM] Token registered with backend');
+        await c.read(supportRepoProvider).syncPermissions(status: _lastPermissionStatus);
+        debugPrint('[FCM] Token and permission ($_lastPermissionStatus) registered with backend');
       }
     } catch (e) {
       debugPrint('[FCM] Failed to register token with backend: $e');
@@ -159,78 +184,42 @@ class NotificationService {
     }
   }
 
-  /// Display an attractive foreground SnackBar / in-app alert
-  void _showForegroundBanner({
+  /// Display a real Android/iOS system notification in status bar & heads-up shade
+  Future<void> _showSystemNotification({
+    required int id,
     required String title,
     required String body,
     required Map<String, dynamic> data,
-  }) {
-    final messenger = rootScaffoldMessengerKey.currentState;
-    if (messenger == null) return;
+  }) async {
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'righttouch_alerts',
+        'RightTouch Alerts',
+        channelDescription: 'RightTouch customer notifications and booking updates',
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+        showWhen: true,
+        enableVibration: true,
+        playSound: true,
+      );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    messenger.removeCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        backgroundColor: const Color(0xFF0F172A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        duration: const Duration(seconds: 4),
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF16A34A).withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.notifications_active,
-                color: Color(0xFF22C55E),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                  if (body.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      body,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-        action: SnackBarAction(
-          label: 'VIEW',
-          textColor: const Color(0xFF22C55E),
-          onPressed: () => _handleNotificationClick(data),
-        ),
-      ),
-    );
+      await _localNotifs.show(
+        id: id,
+        title: title,
+        body: body,
+        notificationDetails: details,
+        payload: jsonEncode(data),
+      );
+    } catch (e) {
+      debugPrint('[LocalNotif Error] $e');
+    }
   }
 
   /// Handle routing when user taps on notification or notification action

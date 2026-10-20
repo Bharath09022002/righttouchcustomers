@@ -100,6 +100,13 @@ class ProfileScreen extends ConsumerWidget {
                 subtitle: 'Custom equipment quotes, status & orders',
                 onTap: () => context.push('/quotations'),
               ),
+              _buildListTile(
+                context,
+                icon: Icons.star_rate_rounded,
+                title: 'My Ratings & Reviews',
+                subtitle: 'Manage reviews for completed services & products',
+                onTap: () => context.push('/ratings'),
+              ),
             ],
           ),
 

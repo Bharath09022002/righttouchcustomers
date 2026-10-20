@@ -681,3 +681,162 @@ class ReportModel {
     );
   }
 }
+
+class RatingModel {
+  final String id;
+  final String bookingId;
+  final String bookingType; // 'service' or 'product'
+  final String? serviceId;
+  final String? serviceName;
+  final String? productId;
+  final String? productName;
+  final String? technicianId;
+  final String? technicianName;
+  final String? userId;
+  final int rates;
+  final String content;
+  final String comment;
+  final dynamic createdAt;
+  final dynamic updatedAt;
+  final double? techAvg;
+  final int? techCount;
+  final double? svcAvg;
+  final int? svcCount;
+  final double? prodAvg;
+  final int? prodCount;
+
+  RatingModel({
+    required this.id,
+    required this.bookingId,
+    this.bookingType = 'service',
+    this.serviceId,
+    this.serviceName,
+    this.productId,
+    this.productName,
+    this.technicianId,
+    this.technicianName,
+    this.userId,
+    required this.rates,
+    required this.content,
+    required this.comment,
+    this.createdAt,
+    this.updatedAt,
+    this.techAvg,
+    this.techCount,
+    this.svcAvg,
+    this.svcCount,
+    this.prodAvg,
+    this.prodCount,
+  });
+
+  static String computeContent(int rate) {
+    if (rate >= 4) return 'Excellent';
+    if (rate == 3) return 'Good';
+    if (rate == 2) return 'Average';
+    return 'Below Average';
+  }
+
+  factory RatingModel.fromJson(dynamic j) {
+    final m = asMap(j);
+
+    // Service ID & Name
+    String? sId;
+    String? sName;
+    if (m['serviceId'] is Map) {
+      final sMap = asMap(m['serviceId']);
+      sId = str(sMap['_id'] ?? sMap['id']);
+      sName = str(sMap['serviceName'] ?? sMap['name'] ?? sMap['title']);
+    } else if (m['serviceId'] != null) {
+      sId = str(m['serviceId']);
+      sName = str(m['serviceName']);
+    }
+
+    // Product ID & Name
+    String? pId;
+    String? pName;
+    if (m['productId'] is Map) {
+      final pMap = asMap(m['productId']);
+      pId = str(pMap['_id'] ?? pMap['id']);
+      pName = str(pMap['productName'] ?? pMap['name'] ?? pMap['title']);
+    } else if (m['productId'] != null) {
+      pId = str(m['productId']);
+      pName = str(m['productName']);
+    }
+
+    // Technician ID & Name
+    String? tId;
+    String? tName;
+    if (m['technicianId'] is Map) {
+      final tMap = asMap(m['technicianId']);
+      tId = str(tMap['_id'] ?? tMap['id']);
+      if (tMap['userId'] is Map) {
+        final uMap = asMap(tMap['userId']);
+        tName = str(uMap['username'] ?? uMap['name'] ?? uMap['fname']);
+      } else {
+        tName = str(tMap['name'] ?? tMap['fname']);
+      }
+    } else if (m['technicianId'] != null) {
+      tId = str(m['technicianId']);
+      tName = str(m['technicianName']);
+    }
+
+    final int rateVal = m['rates'] is num
+        ? (m['rates'] as num).toInt()
+        : (int.tryParse(m['rates']?.toString() ?? '5') ?? 5);
+
+    final rawContent = m['content']?.toString();
+    final contentVal = (rawContent != null && rawContent.isNotEmpty)
+        ? rawContent
+        : computeContent(rateVal);
+
+    // Aggregate stats
+    double? techA;
+    int? techC;
+    if (m['technician'] is Map) {
+      final tStats = asMap(m['technician']);
+      techA = (tStats['avg'] is num) ? (tStats['avg'] as num).toDouble() : null;
+      techC = (tStats['count'] is num) ? (tStats['count'] as num).toInt() : null;
+    }
+
+    double? svcA;
+    int? svcC;
+    if (m['service'] is Map) {
+      final sStats = asMap(m['service']);
+      svcA = (sStats['avg'] is num) ? (sStats['avg'] as num).toDouble() : null;
+      svcC = (sStats['count'] is num) ? (sStats['count'] as num).toInt() : null;
+    }
+
+    double? prodA;
+    int? prodC;
+    if (m['product'] is Map) {
+      final pStats = asMap(m['product']);
+      prodA = (pStats['avg'] is num) ? (pStats['avg'] as num).toDouble() : null;
+      prodC = (pStats['count'] is num) ? (pStats['count'] as num).toInt() : null;
+    }
+
+    return RatingModel(
+      id: str(m['_id'] ?? m['ratingId'] ?? m['id']),
+      bookingId: str(m['bookingId'] ?? m['booking']),
+      bookingType: str(m['bookingType'], 'service'),
+      serviceId: sId,
+      serviceName: sName,
+      productId: pId,
+      productName: pName,
+      technicianId: tId,
+      technicianName: tName,
+      userId: str(m['userId'] is Map ? m['userId']['_id'] : m['userId']),
+      rates: rateVal,
+      content: contentVal,
+      comment: str(m['comment'] ?? m['review']),
+      createdAt: m['createdAt'],
+      updatedAt: m['updatedAt'],
+      techAvg: techA,
+      techCount: techC,
+      svcAvg: svcA,
+      svcCount: svcC,
+      prodAvg: prodA,
+      prodCount: prodC,
+    );
+  }
+}
+

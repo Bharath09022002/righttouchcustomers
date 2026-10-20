@@ -68,6 +68,23 @@ class LocalCacheService {
     return null;
   }
 
+  static const String _keyDefaultAddressId = 'cached_default_address_id_v1';
+
+  Future<void> cacheDefaultAddressId(String addressId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyDefaultAddressId, addressId);
+    } catch (_) {}
+  }
+
+  Future<String?> getCachedDefaultAddressId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_keyDefaultAddressId);
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> clearAll() async {
     try {
       await _secure.delete(key: _keyProfile);
@@ -75,6 +92,7 @@ class LocalCacheService {
       await prefs.remove(_keyCategories);
       await prefs.remove(_keyServices);
       await prefs.remove(_keyProfile);
+      await prefs.remove(_keyDefaultAddressId);
     } catch (_) {}
   }
 }

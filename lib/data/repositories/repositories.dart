@@ -698,7 +698,17 @@ class PaymentRepository {
 
   Future<void> retryPayment(String bookingId) async {
     final r = await gw.paymentRetry(bookingId);
-    if (r is ApiErr) throw ApiException(r.message);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+  }
+
+  Future<void> declareCash(String bookingId) async {
+    final r = await gw.declareCash(bookingId);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+  }
+
+  Future<void> verifyPayment(Map<String, dynamic> body) async {
+    final r = await gw.verifyPayment(body);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
   }
 }
 
@@ -849,13 +859,42 @@ class SupportRepository {
 
   Future<void> registerDeviceToken(String token) async {
     try {
-      await gw.registerDevice({
+      final res = await gw.registerDevice({
         'token': token,
         'fcmToken': token,
         'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
         'deviceId': 'default',
       });
-    } catch (_) {}
+      if (res is ApiErr) {
+        debugPrint('[FCM Register Error] ${res.message}');
+      } else {
+        debugPrint('[FCM Register Success] Device token synced');
+      }
+    } catch (e) {
+      debugPrint('[FCM Register Exception] $e');
+    }
+  }
+
+  Future<void> syncPermissions({
+    required String status,
+    String? deviceId,
+  }) async {
+    try {
+      final res = await gw.updatePermissions({
+        'deviceId': deviceId ?? 'default',
+        'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+        'permissions': {
+          'notification': status,
+        },
+      });
+      if (res is ApiErr) {
+        debugPrint('[Permission Sync Error] ${res.message}');
+      } else {
+        debugPrint('[Permission Sync Success] Notification permission synced: $status');
+      }
+    } catch (e) {
+      debugPrint('[Permission Sync Exception] $e');
+    }
   }
 
   Future<void> deleteDeviceToken([String? token]) async {
@@ -867,3 +906,73 @@ class SupportRepository {
     } catch (_) {}
   }
 }
+
+class RatingRepository {
+  final RemoteGateway gw;
+  RatingRepository(this.gw);
+
+  Future<List<RatingModel>> getMyRatings() async {
+    try {
+      final r = await gw.myRatings();
+      if (r is ApiOk) {
+        return _parseList(r.data, (e) => RatingModel.fromJson(e));
+      }
+      final rAlt = await gw.myRatingsAlt();
+      if (rAlt is ApiOk) {
+        return _parseList(rAlt.data, (e) => RatingModel.fromJson(e));
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<RatingModel> getRatingById(String id) async {
+    final r = await gw.getRatingById(id);
+    if (r is ApiOk) {
+      final d = (r.data is Map && r.data['result'] != null)
+          ? r.data['result']
+          : ((r.data is Map && r.data['data'] != null) ? r.data['data'] : r.data);
+      return RatingModel.fromJson(d);
+    }
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    throw ApiException('Failed to fetch rating');
+  }
+
+  Future<Map<String, dynamic>> submitRating({
+    required String bookingId,
+    required String bookingType,
+    required int rates,
+    required String comment,
+  }) async {
+    final body = {
+      'bookingId': bookingId,
+      'bookingType': bookingType,
+      'rates': rates,
+      'comment': comment,
+    };
+    final r = await gw.submitRating(body);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    if (r is ApiOk && r.data is Map) return Map<String, dynamic>.from(r.data);
+    return {};
+  }
+
+  Future<Map<String, dynamic>> updateRating({
+    required String id,
+    int? rates,
+    String? comment,
+  }) async {
+    final body = <String, dynamic>{
+      if (rates != null) 'rates': rates,
+      if (comment != null) 'comment': comment,
+    };
+    final r = await gw.updateRating(id, body);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    if (r is ApiOk && r.data is Map) return Map<String, dynamic>.from(r.data);
+    return {};
+  }
+
+  Future<void> deleteRating(String id) async {
+    final r = await gw.deleteRating(id);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+  }
+}
+

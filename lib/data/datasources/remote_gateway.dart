@@ -180,6 +180,10 @@ class RemoteGateway {
       api.post(ApiEndpoints.paymentRetry(bookingId), {});
   Future<ApiResult<dynamic>> paymentRefunds(String bookingId) =>
       api.get(ApiEndpoints.paymentRefunds(bookingId));
+  Future<ApiResult<dynamic>> declareCash(String bookingId) =>
+      api.post(ApiEndpoints.cashDeclare(bookingId), {});
+  Future<ApiResult<dynamic>> verifyPayment(Map<String, dynamic> body) =>
+      api.post(ApiEndpoints.paymentVerify, body);
 
   // ---------- Addresses ----------
   Future<ApiResult<dynamic>> addresses() => api.get(ApiEndpoints.addresses);
@@ -211,7 +215,14 @@ class RemoteGateway {
   // ---------- Ratings / reports / quotes / notifications ----------
   Future<ApiResult<dynamic>> submitRating(Map<String, dynamic> body) =>
       api.post(ApiEndpoints.rating, body);
-  Future<ApiResult<dynamic>> myRatings() => api.get(ApiEndpoints.myRatings);
+  Future<ApiResult<dynamic>> myRatings() => api.get(ApiEndpoints.ratings);
+  Future<ApiResult<dynamic>> myRatingsAlt() => api.get(ApiEndpoints.myRatings);
+  Future<ApiResult<dynamic>> getRatingById(String id) =>
+      api.get(ApiEndpoints.ratingById(id));
+  Future<ApiResult<dynamic>> updateRating(String id, Map<String, dynamic> body) =>
+      api.put(ApiEndpoints.updateRating(id), body);
+  Future<ApiResult<dynamic>> deleteRating(String id) =>
+      api.delete(ApiEndpoints.deleteRating(id));
   Future<ApiResult<dynamic>> createReport(Map<String, dynamic> body) =>
       api.post(ApiEndpoints.reports, body);
   Future<ApiResult<dynamic>> myReports() => api.get(ApiEndpoints.myReports);

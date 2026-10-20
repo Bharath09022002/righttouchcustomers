@@ -78,28 +78,15 @@ void main() {
 
       // Step 1: Explanation
       expect(find.text('Permanent Account Deletion'), findsOneWidget);
-      expect(find.text('Request OTP to Continue'), findsOneWidget);
+      expect(find.text('Continue to Confirmation'), findsOneWidget);
 
-      // Tap Request OTP
-      await tester.tap(find.text('Request OTP to Continue'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Step 2: OTP Verification
-      expect(find.text('Security Verification'), findsOneWidget);
-      expect(find.text('Verify & Proceed'), findsOneWidget);
-
-      // Enter OTP "1234"
-      await tester.enterText(find.byType(TextField), '1234');
-      await tester.pump();
-
-      // Tap Verify & Proceed (cancels periodic resend timer)
-      await tester.tap(find.text('Verify & Proceed'));
+      // Tap Continue to Confirmation
+      await tester.tap(find.text('Continue to Confirmation'));
       await tester.pumpAndSettle();
 
-      // Step 3: Final Confirmation
+      // Step 2: Final Confirmation
       expect(find.text('Final Confirmation'), findsOneWidget);
-      expect(find.text('To confirm, please type "DELETE" in capital letters below:'), findsOneWidget);
+      expect(find.text('To confirm permanent deletion, please type "DELETE" in capital letters below:'), findsOneWidget);
 
       // Verify Delete button is initially disabled
       final deleteBtnFinder = find.widgetWithText(ElevatedButton, 'Permanently Delete Account');

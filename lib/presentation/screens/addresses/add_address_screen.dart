@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../core/storage/local_cache.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../../core/widgets/ui.dart';
@@ -382,9 +383,15 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen>
                     ),
                     icon: const Icon(Icons.check_circle_outline, size: 20),
                     label: const Text('Add This as Default', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(ctx);
+                      try {
+                        await ref.read(addressRepoProvider).setDefault(newAddress);
+                      } catch (_) {}
+                      await LocalCacheService.instance.cacheDefaultAddressId(newAddress.id);
                       ref.read(selectedAddressProvider.notifier).state = newAddress;
+                      ref.invalidate(addressListProvider);
+                      if (!mounted) return;
                       showSuccess(context, title: 'Default Address Set', message: 'This address is now your default service address.');
                       if (Navigator.of(context).canPop()) {
                         Navigator.of(context).pop(newAddress);

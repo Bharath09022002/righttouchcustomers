@@ -29,6 +29,7 @@ import '../../presentation/screens/profile/account_settings_screen.dart';
 import '../../presentation/screens/profile/support_legal_screen.dart';
 import '../../presentation/screens/profile/warranty_info_screen.dart';
 import '../../presentation/screens/profile/delete_account_screen.dart';
+import '../../presentation/screens/profile/my_ratings_screen.dart';
 import '../../presentation/screens/products/products_screen.dart';
 import '../../presentation/screens/products/product_detail_screen.dart';
 import '../../presentation/screens/services/services_screen.dart';
@@ -140,6 +141,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/support-legal', builder: (_, __) => const SupportLegalScreen()),
       GoRoute(path: '/warranty-info', builder: (_, __) => const WarrantyInfoScreen()),
       GoRoute(path: '/delete-account', builder: (_, __) => const DeleteAccountScreen()),
+      GoRoute(path: '/ratings', builder: (_, __) => const MyRatingsScreen()),
     ],
   );
 });

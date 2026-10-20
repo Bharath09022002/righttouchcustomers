@@ -20,6 +20,7 @@ final cartRepoProvider = Provider((ref) => CartRepository(ref.watch(gatewayProvi
 final addressRepoProvider = Provider((ref) => AddressRepository(ref.watch(gatewayProvider)));
 final paymentRepoProvider = Provider((ref) => PaymentRepository(ref.watch(gatewayProvider)));
 final supportRepoProvider = Provider((ref) => SupportRepository(ref.watch(gatewayProvider)));
+final ratingRepoProvider = Provider((ref) => RatingRepository(ref.watch(gatewayProvider)));
 
 // ---------- auth state ----------
 enum AuthMode { login, signup }
@@ -94,6 +95,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       ref.invalidate(unreadNotificationCountProvider);
       ref.invalidate(paymentListProvider);
       ref.invalidate(quotationListProvider);
+      ref.invalidate(myRatingsProvider);
     });
   }
 
@@ -414,7 +416,31 @@ final cartProvider = FutureProvider((ref) async {
 final addressListProvider = FutureProvider((ref) async {
   final isGuest = ref.watch(authProvider).isGuest;
   if (isGuest) return const <AddressModel>[];
-  return ref.watch(addressRepoProvider).list();
+  final list = await ref.watch(addressRepoProvider).list();
+
+  if (list.isNotEmpty) {
+    final cachedId = await LocalCacheService.instance.getCachedDefaultAddressId();
+    AddressModel? match;
+    if (cachedId != null) {
+      match = list.cast<AddressModel?>().firstWhere(
+            (a) => a?.id == cachedId,
+            orElse: () => null,
+          );
+    }
+    match ??= list.cast<AddressModel?>().firstWhere(
+          (a) => a?.isDefault == true,
+          orElse: () => list.first,
+        );
+
+    final current = ref.read(selectedAddressProvider);
+    if (match != null && (current == null || !list.any((a) => a.id == current.id))) {
+      Future.microtask(() {
+        ref.read(selectedAddressProvider.notifier).state = match;
+        LocalCacheService.instance.cacheDefaultAddressId(match!.id);
+      });
+    }
+  }
+  return list;
 });
 
 final selectedAddressProvider = StateProvider<AddressModel?>((_) => null);
@@ -464,4 +490,16 @@ final reportCategoriesProvider =
     FutureProvider((ref) => ref.watch(supportRepoProvider).reportCategories());
 final cancelReasonsProvider =
     FutureProvider((ref) => ref.watch(bookingRepoProvider).reasons());
+
+// ---------- ratings ----------
+final myRatingsProvider = FutureProvider((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return const <RatingModel>[];
+  return ref.watch(ratingRepoProvider).getMyRatings();
+});
+
+final ratingDetailProvider = FutureProvider.autoDispose.family<RatingModel, String>(
+    (ref, String id) async {
+  return ref.watch(ratingRepoProvider).getRatingById(id);
+});
 

@@ -82,7 +82,14 @@ class ApiEndpoints {
 
   // Ratings
   static const rating = '/api/user/rating';
+  static const ratings = '/api/user/ratings';
   static const myRatings = '/api/user/get-my-ratings';
+  static String ratingById(String id) => '/api/user/ratings/$id';
+  static String ratingByIdAlt(String id) => '/api/user/getRatingById/$id';
+  static String updateRating(String id) => '/api/user/updateRating/$id';
+  static String deleteRating(String id) => '/api/user/deleteRating/$id';
+  static const adminRatings = '/api/user/admin/ratings';
+  static const allRatings = '/api/user/getAllRatings';
 
   // Reports / complaints
   static const reports = '/api/user/reports';

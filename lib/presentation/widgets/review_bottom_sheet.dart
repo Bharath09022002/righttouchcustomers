@@ -2,16 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/rt_loader.dart';
+import '../../data/models/models.dart';
 
-/// Interactive modal bottom sheet for collecting customer reviews after service completion.
-Future<void> showReviewBottomSheet(
+/// Interactive modal bottom sheet for collecting and editing customer reviews.
+/// Enforces all validation constraints:
+/// - rates: 1 to 5
+/// - comment: non-empty string
+/// - bookingType: 'service' or 'product'
+/// - Auto content label computed server/client side:
+///   • 4 or 5 ➔ "Excellent"
+///   • 3 ➔ "Good"
+///   • 2 ➔ "Average"
+///   • 1 ➔ "Below Average"
+Future<bool?> showReviewBottomSheet(
   BuildContext context, {
   required String bookingId,
   required String serviceTitle,
   String? technicianName,
-  required Future<bool> Function(int rating, List<String> tags, String comment) onSubmit,
+  String bookingType = 'service',
+  int initialRating = 5,
+  String initialComment = '',
+  bool isEditing = false,
+  required Future<bool> Function(int rates, String comment) onSubmit,
 }) async {
-  await showModalBottomSheet<void>(
+  return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.white,
@@ -22,6 +36,10 @@ Future<void> showReviewBottomSheet(
       bookingId: bookingId,
       serviceTitle: serviceTitle,
       technicianName: technicianName,
+      bookingType: bookingType,
+      initialRating: initialRating.clamp(1, 5),
+      initialComment: initialComment,
+      isEditing: isEditing,
       onSubmit: onSubmit,
     ),
   );
@@ -31,12 +49,20 @@ class _ReviewSheetContent extends StatefulWidget {
   final String bookingId;
   final String serviceTitle;
   final String? technicianName;
-  final Future<bool> Function(int rating, List<String> tags, String comment) onSubmit;
+  final String bookingType;
+  final int initialRating;
+  final String initialComment;
+  final bool isEditing;
+  final Future<bool> Function(int rates, String comment) onSubmit;
 
   const _ReviewSheetContent({
     required this.bookingId,
     required this.serviceTitle,
     this.technicianName,
+    this.bookingType = 'service',
+    this.initialRating = 5,
+    this.initialComment = '',
+    this.isEditing = false,
     required this.onSubmit,
   });
 
@@ -45,12 +71,13 @@ class _ReviewSheetContent extends StatefulWidget {
 }
 
 class _ReviewSheetContentState extends State<_ReviewSheetContent> {
-  int _rating = 5;
+  late int _rating;
+  late final TextEditingController _commentCtrl;
   final List<String> _selectedTags = [];
-  final TextEditingController _commentCtrl = TextEditingController();
   bool _submitting = false;
+  String? _commentError;
 
-  final List<String> _tags = const [
+  final List<String> _serviceTags = const [
     'On Time',
     'Polite & Respectful',
     'Great Work Quality',
@@ -58,6 +85,21 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
     'Fair Pricing',
     'Quick Service',
   ];
+
+  final List<String> _productTags = const [
+    'Genuine Parts',
+    'High Durability',
+    'Perfect Fit',
+    'Great Price',
+    'Fast Delivery',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.initialRating.clamp(1, 5);
+    _commentCtrl = TextEditingController(text: widget.initialComment);
+  }
 
   @override
   void dispose() {
@@ -72,26 +114,79 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
         _selectedTags.remove(tag);
       } else {
         _selectedTags.add(tag);
+        // If comment is empty or short, suggest this tag in the comment box
+        final cur = _commentCtrl.text.trim();
+        if (cur.isEmpty) {
+          _commentCtrl.text = tag;
+        } else if (!cur.contains(tag)) {
+          _commentCtrl.text = '$cur, $tag';
+        }
+        _commentError = null;
       }
     });
   }
 
+  String get _contentLabel => RatingModel.computeContent(_rating);
+
+  Color get _contentLabelColor {
+    switch (_rating) {
+      case 5:
+      case 4:
+        return const Color(0xFF16A34A); // Emerald
+      case 3:
+        return const Color(0xFFD97706); // Amber
+      case 2:
+        return const Color(0xFFEA580C); // Orange
+      case 1:
+      default:
+        return const Color(0xFFDC2626); // Red
+    }
+  }
+
+  Color get _contentLabelBg {
+    switch (_rating) {
+      case 5:
+      case 4:
+        return const Color(0xFFECFDF5);
+      case 3:
+        return const Color(0xFFFFFBEB);
+      case 2:
+        return const Color(0xFFFFF7ED);
+      case 1:
+      default:
+        return const Color(0xFFFEF2F2);
+    }
+  }
+
   Future<void> _submit() async {
-    if (_rating == 0) return;
-    setState(() => _submitting = true);
-    final success = await widget.onSubmit(
-      _rating,
-      _selectedTags,
-      _commentCtrl.text.trim(),
-    );
+    final comment = _commentCtrl.text.trim();
+    if (comment.isEmpty) {
+      setState(() {
+        _commentError = 'Please share a brief comment about your experience.';
+      });
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _commentError = null;
+    });
+
+    final success = await widget.onSubmit(_rating, comment);
+
     if (!mounted) return;
     setState(() => _submitting = false);
+
     if (success) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Thank you! Your feedback helps us improve.'),
-          backgroundColor: AppColors.primary,
+        SnackBar(
+          content: Text(
+            widget.isEditing
+                ? 'Rating updated successfully!'
+                : 'Thank you! Your rating has been submitted.',
+          ),
+          backgroundColor: const Color(0xFF16A34A),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -101,6 +196,8 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isProduct = widget.bookingType == 'product';
+    final availableTags = isProduct ? _productTags : _serviceTags;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(24, 16, 24, bottomInset + 24),
@@ -117,12 +214,14 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // Title
-            const Text(
-              'How was your service?',
-              style: TextStyle(
+            // Header Title
+            Text(
+              widget.isEditing
+                  ? 'Edit Your Review'
+                  : (isProduct ? 'Rate Your Equipment / Product' : 'How was your service?'),
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: AppColors.ink,
@@ -130,8 +229,8 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
             ),
             const SizedBox(height: 6),
             Text(
-              widget.technicianName != null
-                  ? '${widget.serviceTitle} by ${widget.technicianName}'
+              widget.technicianName != null && widget.technicianName!.isNotEmpty
+                  ? '${widget.serviceTitle} • ${widget.technicianName}'
                   : widget.serviceTitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -140,7 +239,7 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
             // Interactive Stars
             Row(
@@ -150,7 +249,7 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
                 final filled = starIndex <= _rating;
                 return GestureDetector(
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    HapticFeedback.selectionClick();
                     setState(() => _rating = starIndex);
                   },
                   child: Padding(
@@ -160,22 +259,42 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
                       duration: const Duration(milliseconds: 180),
                       child: Icon(
                         filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                        size: 38,
-                        color: filled ? AppColors.star : AppColors.grey300,
+                        size: 40,
+                        color: filled ? const Color(0xFFF59E0B) : AppColors.grey300,
                       ),
                     ),
                   ),
                 );
               }),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
-            // Tag Pills
+            // Auto Content Label Pill (Server matches: Excellent, Good, Average, Below Average)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: _contentLabelBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _contentLabelColor.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                '$_contentLabel ($_rating of 5)',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: _contentLabelColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            // Tag Pills for quick highlights
             Wrap(
               spacing: 8,
               runSpacing: 8,
               alignment: WrapAlignment.center,
-              children: _tags.map((tag) {
+              children: availableTags.map((tag) {
                 final isSelected = _selectedTags.contains(tag);
                 return FilterChip(
                   label: Text(tag),
@@ -200,15 +319,23 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
             ),
             const SizedBox(height: 18),
 
-            // Comments Box
+            // Comments Box (Required per validation constraint)
             TextField(
               controller: _commentCtrl,
               maxLines: 3,
               style: const TextStyle(fontSize: 14),
+              onChanged: (_) {
+                if (_commentError != null) {
+                  setState(() => _commentError = null);
+                }
+              },
               decoration: InputDecoration(
-                hintText: 'Share any details about your experience (optional)...',
+                hintText: isProduct
+                    ? 'Write your feedback on the product performance, delivery, quality...'
+                    : 'Write your feedback on service quality, punctuality, satisfaction...',
                 hintStyle: const TextStyle(fontSize: 13, color: AppColors.grey400),
                 contentPadding: const EdgeInsets.all(14),
+                errorText: _commentError,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(color: AppColors.grey200),
@@ -223,9 +350,24 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+
+            // Helpful note regarding 1 rating per booking rule
+            Row(
+              children: const [
+                Icon(Icons.info_outline_rounded, size: 14, color: AppColors.grey500),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '1 review per booking. You can edit or delete this review anytime in My Ratings.',
+                    style: TextStyle(fontSize: 11, color: AppColors.grey500),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
 
-            // Submit Button
+            // Submit / Update Button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -241,9 +383,9 @@ class _ReviewSheetContentState extends State<_ReviewSheetContent> {
                 ),
                 child: _submitting
                     ? const RtLoader.button(color: Colors.white)
-                    : const Text(
-                        'Submit Review',
-                        style: TextStyle(
+                    : Text(
+                        widget.isEditing ? 'Update Review' : 'Submit Review',
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),

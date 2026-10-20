@@ -9,6 +9,7 @@ import '../../../core/widgets/ui.dart';
 import '../../../data/models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/right_touch_header.dart';
+import '../../widgets/review_bottom_sheet.dart';
 
 class ProductQuotationsScreen extends ConsumerStatefulWidget {
   final int initialTab;
@@ -100,6 +101,47 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Future<void> _rateProduct(ProductBookingModel b) async {
+    final myRatings = ref.read(myRatingsProvider).valueOrNull ?? [];
+    final existingRating = myRatings.where((r) => r.bookingId == b.id).firstOrNull;
+
+    await showReviewBottomSheet(
+      context,
+      bookingId: b.id,
+      serviceTitle: b.productName ?? 'Custom Equipment',
+      bookingType: 'product',
+      isEditing: existingRating != null,
+      initialRating: existingRating?.rates ?? 5,
+      initialComment: existingRating?.comment ?? '',
+      onSubmit: (rates, comment) async {
+        try {
+          if (existingRating != null) {
+            await ref.read(ratingRepoProvider).updateRating(
+              id: existingRating.id,
+              rates: rates,
+              comment: comment,
+            );
+          } else {
+            await ref.read(ratingRepoProvider).submitRating(
+              bookingId: b.id,
+              bookingType: 'product',
+              rates: rates,
+              comment: comment,
+            );
+          }
+          ref.invalidate(myRatingsProvider);
+          return true;
+        } catch (e) {
+          if (mounted) {
+            final appErr = mapException(e);
+            showError(context, title: 'Rating Failed', message: appErr.userMessage);
+          }
+          return false;
+        }
+      },
+    );
   }
 
   Future<void> _acceptQuotation(QuotationModel q) async {
@@ -816,12 +858,36 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    if (b.amount != null)
-                      Text(
-                        inr(b.amount),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                      ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (b.amount != null)
+                          Text(
+                            inr(b.amount),
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                          )
+                        else
+                          const SizedBox.shrink(),
+                        Builder(
+                          builder: (context) {
+                            final myRatings = ref.watch(myRatingsProvider).valueOrNull ?? [];
+                            final hasRated = myRatings.any((r) => r.bookingId == b.id);
+                            return OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: hasRated ? const Color(0xFF16A34A) : const Color(0xFF0F172A),
+                                side: BorderSide(color: hasRated ? const Color(0xFFBBF7D0) : const Color(0xFFCBD5E1)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              ),
+                              icon: Icon(hasRated ? Icons.star_rounded : Icons.star_outline_rounded, size: 16, color: hasRated ? const Color(0xFFF59E0B) : null),
+                              label: Text(hasRated ? 'Edit Review' : 'Rate Product', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                              onPressed: () => _rateProduct(b),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               );
