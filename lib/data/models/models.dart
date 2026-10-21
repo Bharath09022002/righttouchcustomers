@@ -840,3 +840,80 @@ class RatingModel {
   }
 }
 
+class RewardBalanceModel {
+  final int availableCoins;
+  final int reservedCoins;
+  final double rupees;
+  final int lifetimeEarned;
+  final int lifetimeRedeemed;
+  final int lifetimeExpired;
+  final int lifetimeReversed;
+
+  const RewardBalanceModel({
+    this.availableCoins = 0,
+    this.reservedCoins = 0,
+    this.rupees = 0.0,
+    this.lifetimeEarned = 0,
+    this.lifetimeRedeemed = 0,
+    this.lifetimeExpired = 0,
+    this.lifetimeReversed = 0,
+  });
+
+  factory RewardBalanceModel.fromJson(dynamic j) {
+    final m = asMap(j);
+    final data = m.containsKey('result')
+        ? asMap(m['result'])
+        : (m.containsKey('data') ? asMap(m['data']) : m);
+    final lt = asMap(data['lifetime']);
+    final coins = (data['availableCoins'] as num?)?.toInt() ?? 0;
+    return RewardBalanceModel(
+      availableCoins: coins,
+      reservedCoins: (data['reservedCoins'] as num?)?.toInt() ?? 0,
+      rupees: (data['rupees'] as num?)?.toDouble() ?? (coins / 100.0),
+      lifetimeEarned: (lt['earned'] as num?)?.toInt() ?? 0,
+      lifetimeRedeemed: (lt['redeemed'] as num?)?.toInt() ?? 0,
+      lifetimeExpired: (lt['expired'] as num?)?.toInt() ?? 0,
+      lifetimeReversed: (lt['reversed'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class RewardTransactionModel {
+  final String id;
+  final String? bookingId;
+  final int coins;
+  final double rupees;
+  final String type; // EARN, REDEEM, EXPIRE, REVERSAL
+  final int balanceAfterCoins;
+  final String status;
+  final String note;
+  final DateTime? createdAt;
+
+  const RewardTransactionModel({
+    required this.id,
+    this.bookingId,
+    required this.coins,
+    required this.rupees,
+    required this.type,
+    required this.balanceAfterCoins,
+    required this.status,
+    required this.note,
+    this.createdAt,
+  });
+
+  factory RewardTransactionModel.fromJson(dynamic j) {
+    final m = asMap(j);
+    final coinVal = (m['coins'] as num?)?.toInt() ?? 0;
+    return RewardTransactionModel(
+      id: str(m['_id'] ?? m['id']),
+      bookingId: m['bookingId']?.toString(),
+      coins: coinVal,
+      rupees: (m['rupees'] as num?)?.toDouble() ?? (coinVal / 100.0),
+      type: str(m['type'], 'EARN').toUpperCase(),
+      balanceAfterCoins: (m['balanceAfterCoins'] as num?)?.toInt() ?? 0,
+      status: str(m['status'], 'COMPLETED'),
+      note: str(m['note']),
+      createdAt: m['createdAt'] != null ? DateTime.tryParse(m['createdAt'].toString()) : null,
+    );
+  }
+}

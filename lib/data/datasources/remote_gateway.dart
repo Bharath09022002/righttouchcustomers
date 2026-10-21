@@ -254,4 +254,9 @@ class RemoteGateway {
       api.delete(ApiEndpoints.deviceToken, body);
   Future<ApiResult<dynamic>> updatePermissions(Map<String, dynamic> body) =>
       api.put(ApiEndpoints.permissions, body);
+
+  // ---------- Rewards ----------
+  Future<ApiResult<dynamic>> rewardBalance() => api.get(ApiEndpoints.rewardBalance);
+  Future<ApiResult<dynamic>> rewardHistory({int page = 1, int limit = 20}) =>
+      api.get(ApiEndpoints.rewardHistory, query: {'page': page, 'limit': limit});
 }

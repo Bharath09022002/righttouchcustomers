@@ -841,45 +841,50 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
                           // RightTouch Rewards Banner (Completed + Paid, 100 Coins = ₹1.00)
                           if (b.status.toLowerCase() == 'completed' && (b.paymentStatus ?? '').toLowerCase() == 'paid') ...[
-                            Container(
-                              margin: const EdgeInsets.only(top: 14),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFFEF3C7), Color(0xFFFFFBEB)],
+                            InkWell(
+                              onTap: () => context.push('/rewards'),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                margin: const EdgeInsets.only(top: 14),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFFEF3C7), Color(0xFFFFFBEB)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFFDE68A)),
                                 ),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFFDE68A)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFF59E0B),
-                                      shape: BoxShape.circle,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFF59E0B),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.stars_rounded, color: Colors.white, size: 22),
                                     ),
-                                    child: const Icon(Icons.stars_rounded, color: Colors.white, size: 22),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '+${(amountVal * 1.5).round()} RightTouch Coins Earned!',
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF92400E)),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        const Text(
-                                          '100 Coins = ₹1.00 • Credited to your customer rewards',
-                                          style: TextStyle(fontSize: 11, color: Color(0xFFB45309)),
-                                        ),
-                                      ],
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '+${(amountVal * 1.5).round()} RightTouch Coins Earned!',
+                                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: Color(0xFF92400E)),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          const Text(
+                                            '100 Coins = ₹1.00 • Tap to view customer rewards',
+                                            style: TextStyle(fontSize: 11, color: Color(0xFFB45309)),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    const Icon(Icons.chevron_right_rounded, color: Color(0xFFD97706), size: 20),
+                                  ],
+                                ),
                               ),
                             ),
                           ],

@@ -107,6 +107,13 @@ class ProfileScreen extends ConsumerWidget {
                 subtitle: 'Manage reviews for completed services & products',
                 onTap: () => context.push('/ratings'),
               ),
+              _buildListTile(
+                context,
+                icon: Icons.stars_rounded,
+                title: 'RightTouch Rewards',
+                subtitle: 'Cashback coins, earnings & redemption balance',
+                onTap: () => context.push('/rewards'),
+              ),
             ],
           ),
 
@@ -299,55 +306,113 @@ class ProfileScreen extends ConsumerWidget {
 
               const SizedBox(width: 8),
 
-              // Edit Profile / Sign In Button
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: InkWell(
-                  onTap: () {
-                    if (isGuest) {
-                      context.push('/login');
-                    } else {
-                      context.push('/edit-profile');
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isGuest ? const Color(0xFF16A34A) : Colors.white,
+              // Right Column: Edit Profile + Rewards Button
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: InkWell(
+                      onTap: () {
+                        if (isGuest) {
+                          context.push('/login');
+                        } else {
+                          context.push('/edit-profile');
+                        }
+                      },
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isGuest ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x06000000),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isGuest ? Icons.login_rounded : Icons.edit,
-                          size: 12,
-                          color: isGuest ? Colors.white : const Color(0xFF0F172A),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isGuest ? 'Sign In' : 'Edit Profile',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: isGuest ? Colors.white : const Color(0xFF0F172A),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isGuest ? const Color(0xFF16A34A) : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isGuest ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
                           ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x06000000),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isGuest ? Icons.login_rounded : Icons.edit,
+                              size: 12,
+                              color: isGuest ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isGuest ? 'Sign In' : 'Edit Profile',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isGuest ? Colors.white : const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: InkWell(
+                      onTap: () {
+                        if (isGuest) {
+                          context.push('/login');
+                        } else {
+                          context.push('/rewards');
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFEF3C7), Color(0xFFFDE68A)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B),
+                            width: 1,
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x14D97706),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.stars_rounded,
+                              size: 13,
+                              color: Color(0xFFD97706),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Rewards',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF92400E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

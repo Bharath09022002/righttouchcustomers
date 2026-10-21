@@ -976,3 +976,24 @@ class RatingRepository {
   }
 }
 
+class RewardRepository {
+  final RemoteGateway gw;
+  RewardRepository(this.gw);
+
+  Future<RewardBalanceModel> getBalance() async {
+    final r = await gw.rewardBalance();
+    if (r is ApiOk) return RewardBalanceModel.fromJson(r.data);
+    return const RewardBalanceModel();
+  }
+
+  Future<List<RewardTransactionModel>> getHistory({int page = 1, int limit = 20}) async {
+    final r = await gw.rewardHistory(page: page, limit: limit);
+    if (r is ApiOk) {
+      final m = asMap(r.data);
+      final raw = m.containsKey('result') ? m['result'] : (m.containsKey('data') ? m['data'] : m);
+      return _parseList(raw, (e) => RewardTransactionModel.fromJson(e));
+    }
+    return [];
+  }
+}
+

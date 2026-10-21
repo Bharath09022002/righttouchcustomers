@@ -21,6 +21,7 @@ final addressRepoProvider = Provider((ref) => AddressRepository(ref.watch(gatewa
 final paymentRepoProvider = Provider((ref) => PaymentRepository(ref.watch(gatewayProvider)));
 final supportRepoProvider = Provider((ref) => SupportRepository(ref.watch(gatewayProvider)));
 final ratingRepoProvider = Provider((ref) => RatingRepository(ref.watch(gatewayProvider)));
+final rewardRepoProvider = Provider((ref) => RewardRepository(ref.watch(gatewayProvider)));
 
 // ---------- auth state ----------
 enum AuthMode { login, signup }
@@ -96,6 +97,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       ref.invalidate(paymentListProvider);
       ref.invalidate(quotationListProvider);
       ref.invalidate(myRatingsProvider);
+      ref.invalidate(rewardBalanceProvider);
+      ref.invalidate(rewardHistoryProvider);
     });
   }
 
@@ -501,5 +504,18 @@ final myRatingsProvider = FutureProvider((ref) async {
 final ratingDetailProvider = FutureProvider.autoDispose.family<RatingModel, String>(
     (ref, String id) async {
   return ref.watch(ratingRepoProvider).getRatingById(id);
+});
+
+// ---------- rewards ----------
+final rewardBalanceProvider = FutureProvider.autoDispose<RewardBalanceModel>((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return const RewardBalanceModel();
+  return ref.watch(rewardRepoProvider).getBalance();
+});
+
+final rewardHistoryProvider = FutureProvider.autoDispose<List<RewardTransactionModel>>((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return const <RewardTransactionModel>[];
+  return ref.watch(rewardRepoProvider).getHistory();
 });
 

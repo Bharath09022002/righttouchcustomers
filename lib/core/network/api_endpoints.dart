@@ -125,6 +125,10 @@ class ApiEndpoints {
   static const deviceToken = '/api/user/device-token';
   static const permissions = '/api/user/permissions';
 
+  // Rewards
+  static const rewardBalance = '/api/user/rewards/balance';
+  static const rewardHistory = '/api/user/rewards/history';
+
   // Alternative & Additional Postman Collection Endpoints
   static String cartRemoveAlt(String id) => '/api/user/cart/removed/$id';
   static String cartItemUpdate(String id) => '/api/user/cart/$id';
