@@ -185,6 +185,8 @@ class RemoteGateway {
       api.post(ApiEndpoints.paymentOrder(bookingId), {});
   Future<ApiResult<dynamic>> paymentRetry(String bookingId) =>
       api.post(ApiEndpoints.paymentRetry(bookingId), {});
+  Future<ApiResult<dynamic>> paymentReceipt(String bookingId) =>
+      api.get(ApiEndpoints.paymentReceipt(bookingId));
   Future<ApiResult<dynamic>> paymentRefunds(String bookingId) =>
       api.get(ApiEndpoints.paymentRefunds(bookingId));
   Future<ApiResult<dynamic>> declareCash(String bookingId) =>
@@ -251,10 +253,10 @@ class RemoteGateway {
   Future<ApiResult<dynamic>> quotation(String id) => api.get(ApiEndpoints.quotation(id));
   Future<ApiResult<dynamic>> quotationView(String id) =>
       api.post(ApiEndpoints.quotationView(id), {});
-  Future<ApiResult<dynamic>> quotationAccept(String id) =>
-      api.post(ApiEndpoints.quotationAccept(id), {});
-  Future<ApiResult<dynamic>> quotationReject(String id) =>
-      api.post(ApiEndpoints.quotationReject(id), {});
+  Future<ApiResult<dynamic>> quotationAccept(String id, [Map<String, dynamic>? body]) =>
+      api.post(ApiEndpoints.quotationAccept(id), body ?? {});
+  Future<ApiResult<dynamic>> quotationReject(String id, [Map<String, dynamic>? body]) =>
+      api.post(ApiEndpoints.quotationReject(id), body ?? {});
   Future<ApiResult<dynamic>> productBookings() =>
       api.get(ApiEndpoints.productBookings);
   Future<ApiResult<dynamic>> productBooking(String id) =>

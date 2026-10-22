@@ -741,40 +741,87 @@ class AddressRepository {
 class PaymentRepository {
   final RemoteGateway gw;
   PaymentRepository(this.gw);
-  Future<List<PaymentModel>> list() async {
+
+  Future<List<PaymentModel>> list({String? state, int limit = 20, String? cursor}) async {
     try {
       final r = await gw.payments();
-      if (r is ApiOk) return _parseList(r.data, (e) => PaymentModel.fromJson(e));
+      if (r is ApiOk) {
+        if (r.data is Map && r.data['items'] is List) {
+          return _parseList(r.data['items'], (e) => PaymentModel.fromJson(e));
+        }
+        return _parseList(r.data, (e) => PaymentModel.fromJson(e));
+      }
     } catch (_) {}
     return [];
   }
 
-  Future<Map<String, dynamic>> summary() async {
+  Future<PaymentSummaryModel> summary() async {
     try {
       final r = await gw.paymentsSummary();
-      if (r is ApiOk) return asMap(r.data);
+      if (r is ApiOk) return PaymentSummaryModel.fromJson(r.data);
     } catch (_) {}
-    return {'totalPaid': 0, 'pending': 0, 'refunded': 0};
+    return PaymentSummaryModel();
   }
 
-  Future<void> createOrder(String bookingId) async {
+  Future<PaymentModel?> detail(String bookingId) async {
+    try {
+      final r = await gw.paymentDetail(bookingId);
+      if (r is ApiOk) return PaymentModel.fromJson(r.data);
+    } catch (_) {}
+    return null;
+  }
+
+  Future<PaymentOrderResult> createOrder(String bookingId, {String? idempotencyKey}) async {
     final r = await gw.paymentOrder(bookingId);
-    if (r is ApiErr) throw ApiException(r.message);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    if (r is ApiOk) return PaymentOrderResult.fromJson(r.data);
+    throw ApiException('Failed to create payment order');
   }
 
-  Future<void> retryPayment(String bookingId) async {
+  Future<PaymentOrderResult> retryPayment(String bookingId, {String? idempotencyKey}) async {
     final r = await gw.paymentRetry(bookingId);
     if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    if (r is ApiOk) return PaymentOrderResult.fromJson(r.data);
+    throw ApiException('Failed to retry payment');
   }
 
-  Future<void> declareCash(String bookingId) async {
+  Future<String?> declareCash(String bookingId, {String? idempotencyKey}) async {
     final r = await gw.declareCash(bookingId);
     if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    if (r is ApiOk && r.data is Map) {
+      return (r.data as Map)['attemptId']?.toString();
+    }
+    return null;
   }
 
-  Future<void> verifyPayment(Map<String, dynamic> body) async {
+  Future<PaymentReceiptModel?> receipt(String bookingId) async {
+    try {
+      final r = await gw.paymentReceipt(bookingId);
+      if (r is ApiOk) return PaymentReceiptModel.fromJson(r.data);
+    } catch (_) {}
+    return null;
+  }
+
+  Future<List<PaymentRefundModel>> refunds(String bookingId) async {
+    try {
+      final r = await gw.paymentRefunds(bookingId);
+      if (r is ApiOk) {
+        if (r.data is Map && r.data['refunds'] is List) {
+          return _parseList(r.data['refunds'], (e) => PaymentRefundModel.fromJson(e));
+        }
+        return _parseList(r.data, (e) => PaymentRefundModel.fromJson(e));
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<Map<String, dynamic>> verifyPayment(Map<String, dynamic> body) async {
     final r = await gw.verifyPayment(body);
     if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    if (r is ApiOk && r.data is Map) {
+      return Map<String, dynamic>.from(r.data as Map);
+    }
+    return {};
   }
 }
 
@@ -804,6 +851,8 @@ class SupportRepository {
     int? quantity,
     String? addressId,
     String? locationType,
+    double? latitude,
+    double? longitude,
     String? additionalNotes,
     String? contactMethod,
   }) async {
@@ -833,14 +882,34 @@ class SupportRepository {
       } catch (_) {}
     }
 
+    String normContact = 'whatsapp';
+    if (contactMethod != null) {
+      final c = contactMethod.toLowerCase().trim();
+      if (c == 'call' || c == 'phone') {
+        normContact = 'call';
+      } else if (c == 'both') {
+        normContact = 'both';
+      } else {
+        normContact = 'whatsapp';
+      }
+    }
+
+    final isGps = locationType == 'gps' && latitude != null && longitude != null;
+    final resolvedLocationType = isGps ? 'gps' : 'saved';
+
     final body = <String, dynamic>{
       if (productId != null && productId.isNotEmpty) 'productId': productId,
-      'quantity': quantity ?? 1,
-      'locationType': locationType ?? (finalAddressId != null && finalAddressId.isNotEmpty ? 'saved' : 'current'),
-      if (finalAddressId != null && finalAddressId.isNotEmpty) 'addressId': finalAddressId,
+      'quantity': (quantity != null && quantity > 0) ? quantity : 1,
+      'locationType': resolvedLocationType,
+      if (resolvedLocationType == 'saved' && finalAddressId != null && finalAddressId.isNotEmpty)
+        'addressId': finalAddressId,
+      if (resolvedLocationType == 'gps') ...{
+        'latitude': latitude,
+        'longitude': longitude,
+      },
       'requirementDescription': requirement,
-      if (additionalNotes != null) 'additionalNotes': additionalNotes,
-      'preferredContactMethod': contactMethod ?? 'whatsapp',
+      if (additionalNotes != null && additionalNotes.isNotEmpty) 'additionalNotes': additionalNotes,
+      'preferredContactMethod': normContact,
     };
     final r = await gw.submitQuoteRequest(body);
     if (r is ApiErr) throw ApiException(r.message, r.statusCode);
@@ -941,14 +1010,24 @@ class SupportRepository {
     } catch (_) {}
   }
 
-  Future<void> acceptQuote(String id) async {
-    final r = await gw.quotationAccept(id);
-    if (r is ApiErr) throw ApiException(r.message);
+  Future<QuotationAcceptResult> acceptQuote(String id, {List<String>? acceptedItemIds}) async {
+    final body = <String, dynamic>{
+      if (acceptedItemIds != null && acceptedItemIds.isNotEmpty)
+        'acceptedItemIds': acceptedItemIds,
+    };
+    final r = await gw.quotationAccept(id, body);
+    if (r is ApiOk) {
+      return QuotationAcceptResult.fromJson(r.data);
+    }
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    throw ApiException('Failed to accept quotation');
   }
 
-  Future<void> rejectQuote(String id) async {
-    final r = await gw.quotationReject(id);
-    if (r is ApiErr) throw ApiException(r.message);
+  Future<void> rejectQuote(String id, [String? reason]) async {
+    final r = await gw.quotationReject(id, {
+      'reason': (reason != null && reason.trim().isNotEmpty) ? reason.trim() : 'Price is higher than expected.'
+    });
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
   }
 
   Future<void> report(Map<String, dynamic> b) async {

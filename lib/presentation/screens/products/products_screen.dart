@@ -670,7 +670,77 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const RightTouchTopAppBar(title: 'Quotations', showSearch: false),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Rounded pill with lightbulb and 'Quotations'
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFDCFCE7), width: 1.5),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0A000000),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/images/logo_icon.png',
+                        height: 22,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Quotations',
+                        style: TextStyle(
+                          color: Color(0xFF00A859),
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Right cart button
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x08000000),
+                        blurRadius: 4,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF0F172A), size: 20),
+                    onPressed: () => context.push('/cart'),
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: RefreshIndicator(
         color: const Color(0xFF16A34A),
         onRefresh: () async {
@@ -683,27 +753,22 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. SEARCH BAR WITH SCANNER ICON
-              _buildSearchBar(isDark),
-
-              const SizedBox(height: 14),
-
-              // 2. HERO CAROUSEL BANNER: "Solar Products for a Better Tomorrow"
+              // 1. HERO CAROUSEL BANNER: "Save Energy, Reduce Bills, Go Green"
               _buildHeroBanner(context),
 
               const SizedBox(height: 14),
 
-              // Stage 7: Custom Quotes & Orders Quick Access Banner
+              // 2. Custom Quotes & Orders Quick Access Banner
               InkWell(
                 onTap: () => context.push('/quotations'),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF064E3B).withAlpha(120) : const Color(0xFFF0FDF4),
+                    color: isDark ? const Color(0xFF064E3B).withAlpha(120) : const Color(0xFFE8FAF2),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF15803D) : const Color(0xFFBBF7D0),
+                      color: isDark ? const Color(0xFF15803D) : const Color(0xFFA7F3D0),
                     ),
                   ),
                   child: Row(
@@ -711,10 +776,10 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF16A34A),
+                          color: const Color(0xFF00A859),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.request_quote_rounded, color: Colors.white, size: 20),
+                        child: const Icon(Icons.description_rounded, color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -724,7 +789,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                             Text(
                               'Custom Quotes & Equipment Orders',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 13.5,
                                 fontWeight: FontWeight.w800,
                                 color: isDark ? Colors.white : const Color(0xFF0F172A),
                               ),
@@ -740,7 +805,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF16A34A)),
+                      const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF00A859)),
                     ],
                   ),
                 ),
@@ -748,12 +813,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
               const SizedBox(height: 18),
 
-              // 3. CATEGORY ICON SELECTOR (All Products, Solar, Surveillance, Appliances, etc.)
-              _buildCategoryIconSelector(isDark, productCategories),
-
-              const SizedBox(height: 22),
-
-              // 4. "PRODUCTS" HEADER & VIEW ALL
+              // 3. "Quotations" Header & View All
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -761,7 +821,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                     child: Text(
                       'Quotations',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.w900,
                         color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
@@ -775,13 +835,13 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                         Text(
                           'View All',
                           style: TextStyle(
-                            color: Color(0xFF16A34A),
-                            fontSize: 13,
+                            color: Color(0xFF00A859),
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         SizedBox(width: 2),
-                        Icon(Icons.arrow_forward_rounded, color: Color(0xFF16A34A), size: 14),
+                        Icon(Icons.arrow_forward_rounded, color: Color(0xFF00A859), size: 15),
                       ],
                     ),
                   ),
@@ -790,12 +850,39 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
               const SizedBox(height: 12),
 
-              // 5. FILTER CHIPS & VIEW SWITCHER ROW
-              _buildFilterChipsRow(isDark, productCategories),
+              // 4. FILTER PILL BUTTON (Matching Screenshot)
+              InkWell(
+                onTap: _showSortModal,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFF00A859), width: 1.2),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.filter_alt_outlined, color: Color(0xFF00A859), size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Filter',
+                        style: TextStyle(
+                          color: Color(0xFF00A859),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Spacer(),
+                      Icon(Icons.chevron_right_rounded, color: Color(0xFF00A859), size: 20),
+                    ],
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 16),
 
-              // 6. FEATURED CATEGORY BANNERS (Solar Panels & CCTV Cameras)
+              // 5. FEATURED CATEGORY BANNERS (Solar Panels & CCTV Cameras)
               _buildCategoryBanners(context),
 
               const SizedBox(height: 18),
@@ -1769,91 +1856,30 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                     ],
                   ),
 
-                  // Action button: Quantity Stepper + Add Quote
-                  Row(
-                    children: [
-                      // Quantity Stepper
-                      Container(
-                        height: 28,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                          ),
+                  // Action button: Full width outlined 'Request Quote' button matching Screenshot
+                  SizedBox(
+                    width: double.infinity,
+                    height: 36,
+                    child: OutlinedButton(
+                      onPressed: () => _addQuote(p),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF0FDF4),
+                        foregroundColor: const Color(0xFF00A859),
+                        side: const BorderSide(color: Color(0xFF00A859), width: 1.2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            InkWell(
-                              onTap: () => _changeQuantity(p.id, -1),
-                              child: const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 2),
-                                child: Icon(Icons.remove, size: 12, color: Color(0xFF64748B)),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              child: Text(
-                                '$qty',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                ),
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () => _changeQuantity(p.id, 1),
-                              child: const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 2),
-                                child: Icon(Icons.add, size: 12, color: Color(0xFF64748B)),
-                              ),
-                            ),
-                          ],
+                        padding: EdgeInsets.zero,
+                      ),
+                      child: const Text(
+                        'Request Quote',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF00A859),
                         ),
                       ),
-                      const SizedBox(width: 6),
-
-                      // Add Quote Button
-                      Expanded(
-                        child: SizedBox(
-                          height: 28,
-                          child: ElevatedButton(
-                            onPressed: () => _addQuote(p),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF16A34A),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 4),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.request_quote_outlined, size: 12),
-                                    SizedBox(width: 3),
-                                    Text(
-                                      'Add Quote',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),

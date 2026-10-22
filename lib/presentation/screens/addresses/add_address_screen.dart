@@ -404,19 +404,27 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen>
                     label: const Text('Add This as Default', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                     onPressed: () async {
                       Navigator.pop(ctx);
+                      final defaultAddress = AddressModel(
+                        id: newAddress.id,
+                        type: newAddress.type,
+                        line: newAddress.line,
+                        city: newAddress.city,
+                        state: newAddress.state,
+                        pincode: newAddress.pincode,
+                        lat: newAddress.lat,
+                        lng: newAddress.lng,
+                        isDefault: true,
+                      );
                       try {
-                        await ref.read(addressRepoProvider).setDefault(newAddress);
+                        await ref.read(addressRepoProvider).setDefault(defaultAddress);
                       } catch (_) {}
-                      await LocalCacheService.instance.cacheDefaultAddressId(newAddress.id);
-                      ref.read(selectedAddressProvider.notifier).state = newAddress;
+                      await LocalCacheService.instance.cacheDefaultAddressId(defaultAddress.id);
+                      ref.read(selectedAddressProvider.notifier).state = defaultAddress;
                       ref.invalidate(addressListProvider);
+                      ref.invalidate(defaultAddressProvider);
                       if (!mounted) return;
                       showSuccess(context, title: 'Default Address Set', message: 'This address is now your default service address.');
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.of(context).pop(newAddress);
-                      } else {
-                        context.go('/');
-                      }
+                      context.go('/');
                     },
                   ),
                 ),

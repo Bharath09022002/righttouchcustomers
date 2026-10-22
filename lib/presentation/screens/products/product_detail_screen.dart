@@ -154,10 +154,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       ),
                       const SizedBox(width: 6),
                       ChoiceChip(
-                        label: const Text('Phone Call', style: TextStyle(fontSize: 11.5)),
-                        selected: contactMethod == 'phone',
+                        label: const Text('Call', style: TextStyle(fontSize: 11.5)),
+                        selected: contactMethod == 'call',
                         selectedColor: const Color(0xFFDCFCE7),
-                        onSelected: (_) => setModalState(() => contactMethod = 'phone'),
+                        onSelected: (_) => setModalState(() => contactMethod = 'call'),
+                      ),
+                      const SizedBox(width: 6),
+                      ChoiceChip(
+                        label: const Text('Both', style: TextStyle(fontSize: 11.5)),
+                        selected: contactMethod == 'both',
+                        selectedColor: const Color(0xFFDCFCE7),
+                        onSelected: (_) => setModalState(() => contactMethod = 'both'),
                       ),
                     ],
                   ),
@@ -175,7 +182,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 productId: p.id,
                                 quantity: _quantity > 0 ? _quantity : 1,
                                 addressId: defaultAddr?.id,
-                                locationType: defaultAddr?.id != null ? 'saved' : 'current',
+                                locationType: defaultAddr?.id != null ? 'saved' : 'gps',
                                 additionalNotes: note,
                                 contactMethod: contactMethod,
                               );
@@ -371,7 +378,52 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       const SizedBox(height: 14),
 
                       // Price / Quote Section
-                      if (hasPrice) ...[
+                      if (p.pricingModel == 'starting_from' && p.estimatedPriceFrom != null) ...[
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          children: [
+                            Text(
+                              '₹${p.estimatedPriceFrom!.toInt()}',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE0F2FE),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFFBAE6FD)),
+                              ),
+                              child: const Text(
+                                'Starting Price',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0369A1),
+                                ),
+                              ),
+                            ),
+                            if (p.estimatedPriceTo != null)
+                              Text(
+                                'up to ₹${p.estimatedPriceTo!.toInt()}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Estimated price • Final quotation provided after site inspection',
+                          style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                        ),
+                      ] else if (hasPrice) ...[
                         Wrap(
                           crossAxisAlignment: WrapCrossAlignment.center,
                           spacing: 8,
@@ -442,6 +494,22 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               ),
                             ],
                           ),
+                        ),
+                      ],
+
+                      if (p.siteInspectionRequired) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: const [
+                            Icon(Icons.home_repair_service_outlined, size: 15, color: Color(0xFF16A34A)),
+                            SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Site inspection required before final installation',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF15803D)),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
 

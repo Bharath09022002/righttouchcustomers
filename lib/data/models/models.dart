@@ -260,6 +260,18 @@ class ProductModel {
   final String warranty;
   final bool inStock;
   final bool quoteRequired;
+  final String pricingModel;
+  final num? estimatedPriceFrom;
+  final num? estimatedPriceTo;
+  final String? productType;
+  final String? usageType;
+  final bool siteInspectionRequired;
+  final String? installationDuration;
+  final List<String> whatIncluded;
+  final List<String> whatNotIncluded;
+  final Map<String, dynamic> technicalSpecifications;
+  final bool amcAvailable;
+  final num? amcPricePerYear;
 
   ProductModel({
     required this.id,
@@ -277,6 +289,18 @@ class ProductModel {
     this.warranty = '1 Year Brand Warranty',
     this.inStock = true,
     this.quoteRequired = false,
+    this.pricingModel = 'after_inspection',
+    this.estimatedPriceFrom,
+    this.estimatedPriceTo,
+    this.productType,
+    this.usageType,
+    this.siteInspectionRequired = true,
+    this.installationDuration,
+    this.whatIncluded = const [],
+    this.whatNotIncluded = const [],
+    this.technicalSpecifications = const {},
+    this.amcAvailable = false,
+    this.amcPricePerYear,
   });
 
   factory ProductModel.fromJson(dynamic j) {
@@ -300,22 +324,48 @@ class ProductModel {
         ? str(cat['category'] ?? cat['name'] ?? cat['title'] ?? cat['categoryName'])
         : str(m['categoryName'] ?? (cat is String ? cat : null));
 
+    final estFrom = m['estimatedPriceFrom'] is num ? m['estimatedPriceFrom'] as num : num.tryParse(str(m['estimatedPriceFrom']));
+    final estTo = m['estimatedPriceTo'] is num ? m['estimatedPriceTo'] as num : num.tryParse(str(m['estimatedPriceTo']));
+    final pricingModel = str(m['pricingModel'] ?? (estFrom != null ? 'starting_from' : 'after_inspection'));
+
     final p = m['price'] is num
         ? m['price']
         : (m['finalPrice'] is num
             ? m['finalPrice']
-            : (m['rate'] is num ? m['rate'] : num.tryParse(str(m['price']))));
+            : (m['rate'] is num ? m['rate'] : (num.tryParse(str(m['price'])) ?? estFrom)));
 
     final mrpVal = m['mrp'] is num
         ? m['mrp']
         : (m['originalPrice'] is num
             ? m['originalPrice']
-            : (m['marketPrice'] is num ? m['marketPrice'] : (p != null ? (p * 1.2).round() : null)));
+            : (m['marketPrice'] is num
+                ? m['marketPrice']
+                : (estTo ?? (p != null ? (p * 1.2).round() : null))));
 
     final stock = m['stock'];
     final inStockVal = m['inStock'] != false &&
         m['isAvailable'] != false &&
         (stock == null || (stock is num ? stock > 0 : true));
+
+    final isQuoteReq = m['quoteRequired'] == true ||
+        m['isQuoteOnly'] == true ||
+        pricingModel == 'after_inspection' ||
+        (pricingModel == 'starting_from' && m['quoteRequired'] != false) ||
+        p == null;
+
+    final incList = <String>[];
+    if (m['whatIncluded'] is List) {
+      incList.addAll((m['whatIncluded'] as List).map((e) => e.toString()));
+    }
+    final notIncList = <String>[];
+    if (m['whatNotIncluded'] is List) {
+      notIncList.addAll((m['whatNotIncluded'] as List).map((e) => e.toString()));
+    }
+
+    final techSpecs = <String, dynamic>{};
+    if (m['technicalSpecifications'] is Map) {
+      techSpecs.addAll(asMap(m['technicalSpecifications']));
+    }
 
     return ProductModel(
       id: str(m['_id'] ?? m['id'] ?? m['productId']),
@@ -337,7 +387,19 @@ class ProductModel {
       brand: (m['brand'] ?? m['brandName'] ?? m['manufacturer'])?.toString() ?? 'RightTouch Pro',
       warranty: m['warranty']?.toString() ?? m['warrantyPeriod']?.toString() ?? '1 Year Brand Warranty',
       inStock: inStockVal,
-      quoteRequired: m['quoteRequired'] == true || m['isQuoteOnly'] == true || p == null,
+      quoteRequired: isQuoteReq,
+      pricingModel: pricingModel,
+      estimatedPriceFrom: estFrom,
+      estimatedPriceTo: estTo,
+      productType: m['productType']?.toString(),
+      usageType: m['usageType']?.toString(),
+      siteInspectionRequired: m['siteInspectionRequired'] != false,
+      installationDuration: m['installationDuration']?.toString(),
+      whatIncluded: incList,
+      whatNotIncluded: notIncList,
+      technicalSpecifications: techSpecs,
+      amcAvailable: m['amcAvailable'] == true,
+      amcPricePerYear: m['amcPricePerYear'] is num ? m['amcPricePerYear'] as num : null,
     );
   }
 }
@@ -549,21 +611,279 @@ class AddressModel {
       };
 }
 
+class PaymentOrderResult {
+  final String? keyId;
+  final String? key;
+  final String? orderId;
+  final String? razorpayOrderId;
+  final num amountPaise;
+  final num amountInRupees;
+  final String currency;
+  final String? paymentId;
+  final bool free;
+  final Map<String, dynamic>? split;
+
+  PaymentOrderResult({
+    this.keyId,
+    this.key,
+    this.orderId,
+    this.razorpayOrderId,
+    required this.amountPaise,
+    required this.amountInRupees,
+    this.currency = 'INR',
+    this.paymentId,
+    this.free = false,
+    this.split,
+  });
+
+  String? get rzpKey => key ?? keyId;
+  String? get providerOrderId => orderId ?? razorpayOrderId;
+
+  factory PaymentOrderResult.fromJson(dynamic j) {
+    final m = asMap(j);
+    final isFree = m['free'] == true || m['status'] == 'success' && (m['amount'] == 0 || m['amount'] == null);
+    final amtPaise = m['amount'] is num ? m['amount'] as num : 0;
+    final amtRupees = m['amountInRupees'] is num
+        ? m['amountInRupees'] as num
+        : (amtPaise > 0 ? amtPaise / 100 : 0);
+
+    return PaymentOrderResult(
+      keyId: m['keyId']?.toString(),
+      key: m['key']?.toString(),
+      orderId: m['orderId']?.toString() ?? m['id']?.toString(),
+      razorpayOrderId: m['razorpayOrderId']?.toString() ?? m['orderId']?.toString() ?? m['id']?.toString(),
+      amountPaise: amtPaise,
+      amountInRupees: amtRupees,
+      currency: m['currency']?.toString() ?? 'INR',
+      paymentId: m['paymentId']?.toString(),
+      free: isFree,
+      split: m['split'] is Map ? Map<String, dynamic>.from(m['split'] as Map) : null,
+    );
+  }
+}
+
+class PaymentSummaryModel {
+  final num amountDuePaise;
+  final int dueCount;
+  final num lifetimeSpentPaise;
+  final num thisMonthPaise;
+  final int processingCount;
+  final int failedCount;
+  final num refundedPaise;
+
+  PaymentSummaryModel({
+    this.amountDuePaise = 0,
+    this.dueCount = 0,
+    this.lifetimeSpentPaise = 0,
+    this.thisMonthPaise = 0,
+    this.processingCount = 0,
+    this.failedCount = 0,
+    this.refundedPaise = 0,
+  });
+
+  num get amountDueRupees => amountDuePaise / 100;
+  num get lifetimeSpentRupees => lifetimeSpentPaise / 100;
+  num get thisMonthRupees => thisMonthPaise / 100;
+  num get refundedRupees => refundedPaise / 100;
+
+  factory PaymentSummaryModel.fromJson(dynamic j) {
+    final m = asMap(j);
+    return PaymentSummaryModel(
+      amountDuePaise: (m['amountDuePaise'] ?? m['pending'] ?? 0) as num,
+      dueCount: (m['dueCount'] ?? 0) is int ? m['dueCount'] as int : int.tryParse(m['dueCount']?.toString() ?? '0') ?? 0,
+      lifetimeSpentPaise: (m['lifetimeSpentPaise'] ?? m['totalPaid'] ?? m['paid'] ?? 0) as num,
+      thisMonthPaise: (m['thisMonthPaise'] ?? 0) as num,
+      processingCount: (m['processingCount'] ?? 0) is int ? m['processingCount'] as int : int.tryParse(m['processingCount']?.toString() ?? '0') ?? 0,
+      failedCount: (m['failedCount'] ?? 0) is int ? m['failedCount'] as int : int.tryParse(m['failedCount']?.toString() ?? '0') ?? 0,
+      refundedPaise: (m['refundedPaise'] ?? m['refunded'] ?? 0) as num,
+    );
+  }
+}
+
+class PaymentReceiptModel {
+  final String receiptNumber;
+  final String? invoiceHtml;
+  final String? invoiceUrl;
+  final dynamic issuedAt;
+
+  PaymentReceiptModel({
+    required this.receiptNumber,
+    this.invoiceHtml,
+    this.invoiceUrl,
+    this.issuedAt,
+  });
+
+  factory PaymentReceiptModel.fromJson(dynamic j) {
+    final m = asMap(j);
+    return PaymentReceiptModel(
+      receiptNumber: str(m['receiptNumber'] ?? m['id']),
+      invoiceHtml: m['invoiceHtml']?.toString(),
+      invoiceUrl: m['invoiceUrl']?.toString(),
+      issuedAt: m['issuedAt'],
+    );
+  }
+}
+
+class PaymentRefundModel {
+  final String reason;
+  final num grossPaise;
+  final num cancellationFeePaise;
+  final num netRefundPaise;
+  final String status;
+  final dynamic createdAt;
+  final dynamic expectedCreditBy;
+
+  PaymentRefundModel({
+    required this.reason,
+    required this.grossPaise,
+    required this.cancellationFeePaise,
+    required this.netRefundPaise,
+    required this.status,
+    this.createdAt,
+    this.expectedCreditBy,
+  });
+
+  num get netRefundRupees => netRefundPaise / 100;
+
+  factory PaymentRefundModel.fromJson(dynamic j) {
+    final m = asMap(j);
+    return PaymentRefundModel(
+      reason: str(m['reason'] ?? 'refund'),
+      grossPaise: (m['grossPaise'] ?? 0) as num,
+      cancellationFeePaise: (m['cancellationFeePaise'] ?? 0) as num,
+      netRefundPaise: (m['netRefundPaise'] ?? 0) as num,
+      status: str(m['status'] ?? 'processed'),
+      createdAt: m['createdAt'],
+      expectedCreditBy: m['expectedCreditBy'],
+    );
+  }
+}
+
+class PaymentAttemptModel {
+  final String attemptId;
+  final String method;
+  final String state;
+  final String? failureReason;
+  final dynamic createdAt;
+
+  PaymentAttemptModel({
+    required this.attemptId,
+    required this.method,
+    required this.state,
+    this.failureReason,
+    this.createdAt,
+  });
+
+  factory PaymentAttemptModel.fromJson(dynamic j) {
+    final m = asMap(j);
+    return PaymentAttemptModel(
+      attemptId: str(m['attemptId'] ?? m['_id']),
+      method: str(m['method'] ?? 'razorpay'),
+      state: str(m['state'] ?? 'created'),
+      failureReason: m['failureReason']?.toString(),
+      createdAt: m['createdAt'],
+    );
+  }
+}
+
 class PaymentModel {
   final String bookingId;
+  final String? paymentId;
   final String status;
+  final String customerState;
+  final String? itemType;
   final num? amount;
+  final num? amountPaise;
   final String? method;
+  final String? paymentMode;
   final String? txnId;
-  PaymentModel({required this.bookingId, required this.status, this.amount, this.method, this.txnId});
+  final String? providerOrderId;
+  final String? providerPaymentId;
+  final String? paymentDetailsSummary;
+  final bool receiptAvailable;
+  final dynamic paidAt;
+  final Map<String, dynamic>? liveAttempt;
+  final Map<String, dynamic>? failure;
+  final Map<String, dynamic>? bookingSummary;
+  final List<PaymentAttemptModel> attempts;
+  final List<PaymentRefundModel> refunds;
+
+  PaymentModel({
+    required this.bookingId,
+    this.paymentId,
+    required this.status,
+    this.customerState = 'not_due',
+    this.itemType,
+    this.amount,
+    this.amountPaise,
+    this.method,
+    this.paymentMode,
+    this.txnId,
+    this.providerOrderId,
+    this.providerPaymentId,
+    this.paymentDetailsSummary,
+    this.receiptAvailable = false,
+    this.paidAt,
+    this.liveAttempt,
+    this.failure,
+    this.bookingSummary,
+    this.attempts = const [],
+    this.refunds = const [],
+  });
+
+  bool get isPaid => customerState == 'paid' || status.toLowerCase() == 'success' || status.toLowerCase() == 'completed';
+  bool get isDue => customerState == 'due' || (status.toLowerCase() == 'pending' && customerState != 'processing');
+  bool get isCashDue => customerState == 'cash_due';
+  bool get isProcessing => customerState == 'processing';
+  bool get isUnderReview => customerState == 'under_review';
+  bool get isFailed => customerState == 'failed' || status.toLowerCase() == 'failed';
+
   factory PaymentModel.fromJson(dynamic j) {
     final m = asMap(j);
+    
+    // Amount extraction: handle both paise object structure and raw rupee fields
+    num? amtInRupees;
+    num? amtInPaise;
+    if (m['amount'] is Map) {
+      final amtMap = m['amount'] as Map;
+      amtInPaise = amtMap['totalPaise'] is num ? amtMap['totalPaise'] as num : (amtMap['duePaise'] is num ? amtMap['duePaise'] as num : null);
+      if (amtInPaise != null) {
+        amtInRupees = amtInPaise / 100;
+      }
+    } else if (m['amount'] is num) {
+      amtInRupees = m['amount'] as num;
+    } else if (m['totalAmount'] is num) {
+      amtInRupees = m['totalAmount'] as num;
+    } else if (m['amountInRupees'] is num) {
+      amtInRupees = m['amountInRupees'] as num;
+    }
+
+    final custState = str(m['customerState'] ?? (m['status'] == 'success' ? 'paid' : (m['status'] == 'failed' ? 'failed' : 'due')));
+
+    final rawAttempts = m['attempts'] is List ? (m['attempts'] as List).map((e) => PaymentAttemptModel.fromJson(e)).toList() : <PaymentAttemptModel>[];
+    final rawRefunds = m['refunds'] is List ? (m['refunds'] as List).map((e) => PaymentRefundModel.fromJson(e)).toList() : <PaymentRefundModel>[];
+
     return PaymentModel(
       bookingId: str(m['bookingId'] ?? m['booking'] ?? m['_id']),
+      paymentId: m['paymentId']?.toString(),
       status: str(m['status'] ?? m['paymentStatus'] ?? 'pending'),
-      amount: m['amount'] is num ? m['amount'] : (m['totalAmount'] is num ? m['totalAmount'] : null),
+      customerState: custState,
+      itemType: m['itemType']?.toString(),
+      amount: amtInRupees,
+      amountPaise: amtInPaise,
       method: m['paymentMethod']?.toString() ?? m['method']?.toString(),
-      txnId: m['transactionId']?.toString() ?? m['txnId']?.toString(),
+      paymentMode: m['paymentMode']?.toString(),
+      txnId: m['transactionId']?.toString() ?? m['txnId']?.toString() ?? m['providerPaymentId']?.toString(),
+      providerOrderId: m['providerOrderId']?.toString(),
+      providerPaymentId: m['providerPaymentId']?.toString(),
+      paymentDetailsSummary: m['paymentDetailsSummary']?.toString(),
+      receiptAvailable: m['receiptAvailable'] == true,
+      paidAt: m['paidAt'],
+      liveAttempt: m['liveAttempt'] is Map ? Map<String, dynamic>.from(m['liveAttempt'] as Map) : null,
+      failure: m['failure'] is Map ? Map<String, dynamic>.from(m['failure'] as Map) : null,
+      bookingSummary: m['bookingSummary'] is Map ? Map<String, dynamic>.from(m['bookingSummary'] as Map) : null,
+      attempts: rawAttempts,
+      refunds: rawRefunds,
     );
   }
 }
@@ -574,15 +894,111 @@ class QuotationModel {
   final String? title;
   final num? amount;
   final dynamic createdAt;
-  QuotationModel({required this.id, required this.status, this.title, this.amount, this.createdAt});
+  final String? quotationNumber;
+  final String? quoteRequestId;
+  final int revision;
+  final dynamic validFrom;
+  final dynamic validUntil;
+  final String? termsAndConditions;
+  final String? adminNotes;
+  final String? paymentStatus;
+  final Map<String, dynamic>? financialSnapshot;
+  final String? productId;
+  final String? productName;
+  final int? quantity;
+  final List<Map<String, dynamic>> items;
+
+  QuotationModel({
+    required this.id,
+    required this.status,
+    this.title,
+    this.amount,
+    this.createdAt,
+    this.quotationNumber,
+    this.quoteRequestId,
+    this.revision = 1,
+    this.validFrom,
+    this.validUntil,
+    this.termsAndConditions,
+    this.adminNotes,
+    this.paymentStatus,
+    this.financialSnapshot,
+    this.productId,
+    this.productName,
+    this.quantity,
+    this.items = const [],
+  });
+
   factory QuotationModel.fromJson(dynamic j) {
     final m = asMap(j);
+    final fin = m['financialSnapshot'] is Map ? asMap(m['financialSnapshot']) : null;
+    final totalPaise = fin != null && fin['totalAmountPaise'] is num
+        ? fin['totalAmountPaise'] as num
+        : (m['totalAmountPaise'] is num ? m['totalAmountPaise'] as num : null);
+    final amt = totalPaise != null
+        ? (totalPaise / 100)
+        : (m['amount'] is num ? m['amount'] as num : (m['quotedPrice'] is num ? m['quotedPrice'] as num : null));
+
+    final pRaw = m['productId'];
+    final pId = pRaw is Map ? str(pRaw['_id'] ?? pRaw['id']) : (pRaw != null ? str(pRaw) : null);
+    final pName = pRaw is Map ? pRaw['productName']?.toString() : null;
+
+    final itemList = <Map<String, dynamic>>[];
+    if (m['items'] is List) {
+      for (final it in (m['items'] as List)) {
+        if (it is Map) itemList.add(asMap(it));
+      }
+    }
+
     return QuotationModel(
       id: str(m['_id'] ?? m['id']),
-      status: str(m['status'] ?? 'pending'),
-      title: (m['title'] ?? m['productName'] ?? m['serviceName'])?.toString(),
-      amount: m['amount'] is num ? m['amount'] : (m['quotedPrice'] is num ? m['quotedPrice'] : null),
+      status: str(m['status'] ?? 'sent'),
+      title: (pName ?? m['title'] ?? m['productName'] ?? m['serviceName'])?.toString(),
+      amount: amt,
       createdAt: m['createdAt'],
+      quotationNumber: m['quotationNumber']?.toString(),
+      quoteRequestId: str(m['quoteRequestId'] ?? m['quoteRequest']),
+      revision: m['revision'] is num ? (m['revision'] as num).toInt() : 1,
+      validFrom: m['validFrom'],
+      validUntil: m['validUntil'],
+      termsAndConditions: m['termsAndConditions']?.toString(),
+      adminNotes: (m['adminNotes'] ?? m['technicianNotes'] ?? m['notes'])?.toString(),
+      paymentStatus: m['paymentStatus']?.toString(),
+      financialSnapshot: fin,
+      productId: pId,
+      productName: pName,
+      quantity: m['quantity'] is num ? (m['quantity'] as num).toInt() : null,
+      items: itemList,
+    );
+  }
+}
+
+class QuotationAcceptResult {
+  final List<String> bookingIds;
+  final String? paymentGroupId;
+  final num? totalAmountPaise;
+
+  QuotationAcceptResult({
+    required this.bookingIds,
+    this.paymentGroupId,
+    this.totalAmountPaise,
+  });
+
+  factory QuotationAcceptResult.fromJson(dynamic j) {
+    final m = asMap(j);
+    final r = m.containsKey('result') ? asMap(m['result']) : m;
+    final ids = <String>[];
+    if (r['bookingIds'] is List) {
+      ids.addAll((r['bookingIds'] as List).map((e) => e.toString()));
+    } else if (r['bookingId'] != null) {
+      ids.add(r['bookingId'].toString());
+    }
+    return QuotationAcceptResult(
+      bookingIds: ids,
+      paymentGroupId: r['paymentGroupId']?.toString(),
+      totalAmountPaise: r['totalAmountPaise'] is num
+          ? r['totalAmountPaise'] as num
+          : (r['amountPaise'] is num ? r['amountPaise'] as num : null),
     );
   }
 }
@@ -611,6 +1027,9 @@ class QuoteRequestModel {
   final String requirement;
   final String status;
   final String? productId;
+  final String? productName;
+  final String? productType;
+  final String? locationType;
   final String? requestNumber;
   final String? preferredContactMethod;
   final String? addressLine;
@@ -623,6 +1042,9 @@ class QuoteRequestModel {
     required this.requirement,
     required this.status,
     this.productId,
+    this.productName,
+    this.productType,
+    this.locationType,
     this.requestNumber,
     this.preferredContactMethod,
     this.addressLine,
@@ -633,14 +1055,21 @@ class QuoteRequestModel {
 
   factory QuoteRequestModel.fromJson(dynamic j) {
     final m = asMap(j);
-    final pId = m['productId'] is Map
-        ? str(m['productId']['_id'] ?? m['productId']['id'])
-        : (m['productId'] != null ? str(m['productId']) : null);
+    final pRaw = m['productId'];
+    final pId = pRaw is Map
+        ? str(pRaw['_id'] ?? pRaw['id'])
+        : (pRaw != null ? str(pRaw) : null);
+    final pName = pRaw is Map ? pRaw['productName']?.toString() : null;
+    final pType = pRaw is Map ? pRaw['productType']?.toString() : null;
+
     return QuoteRequestModel(
       id: str(m['_id'] ?? m['id']),
-      requirement: str(m['requirementDescription'] ?? m['requirement'] ?? m['description'] ?? 'Product Quote Request'),
-      status: str(m['status'] ?? 'pending'),
+      requirement: str(m['requirementDescription'] ?? m['requirement'] ?? m['description'] ?? (pName != null ? 'Quote for $pName' : 'Product Quote Request')),
+      status: str(m['status'] ?? 'quote_requested'),
       productId: pId,
+      productName: pName,
+      productType: pType,
+      locationType: m['locationType']?.toString(),
       requestNumber: m['requestNumber']?.toString(),
       preferredContactMethod: m['preferredContactMethod']?.toString(),
       addressLine: m['address'] is Map ? str(m['address']['addressLine']) : m['addressId']?.toString(),
@@ -655,7 +1084,10 @@ class ProductBookingModel {
   final String id;
   final String status;
   final num? amount;
+  final num? amountPaise;
   final String? quotationId;
+  final String? paymentGroupId;
+  final String? productId;
   final String? productName;
   final int? quantity;
   final String? paymentStatus;
@@ -665,7 +1097,10 @@ class ProductBookingModel {
     required this.id,
     required this.status,
     this.amount,
+    this.amountPaise,
     this.quotationId,
+    this.paymentGroupId,
+    this.productId,
     this.productName,
     this.quantity,
     this.paymentStatus,
@@ -674,14 +1109,28 @@ class ProductBookingModel {
 
   factory ProductBookingModel.fromJson(dynamic j) {
     final m = asMap(j);
+    final pRaw = m['productId'];
+    final pId = pRaw is Map ? str(pRaw['_id'] ?? pRaw['id']) : (pRaw != null ? str(pRaw) : null);
+    final pName = pRaw is Map ? pRaw['productName']?.toString() : (m['productName'] ?? m['title'])?.toString();
+
+    final paise = m['amountPaise'] is num ? m['amountPaise'] as num : null;
+    final amt = m['amount'] is num
+        ? m['amount'] as num
+        : (m['finalAmount'] is num
+            ? m['finalAmount'] as num
+            : (paise != null ? (paise / 100) : null));
+
     return ProductBookingModel(
       id: str(m['_id'] ?? m['id']),
-      status: str(m['status'] ?? m['bookingStatus'] ?? 'confirmed'),
-      amount: m['finalAmount'] is num ? m['finalAmount'] : (m['amount'] is num ? m['amount'] : null),
+      status: str(m['status'] ?? m['bookingStatus'] ?? 'active'),
+      amount: amt,
+      amountPaise: paise,
       quotationId: str(m['quotationId'] ?? m['quotation']),
-      productName: (m['productName'] ?? m['title'])?.toString(),
+      paymentGroupId: m['paymentGroupId']?.toString(),
+      productId: pId,
+      productName: pName,
       quantity: m['quantity'] is num ? (m['quantity'] as num).toInt() : (m['qty'] is num ? (m['qty'] as num).toInt() : null),
-      paymentStatus: m['paymentStatus']?.toString(),
+      paymentStatus: str(m['paymentStatus'] ?? 'pending'),
       createdAt: m['createdAt'],
     );
   }

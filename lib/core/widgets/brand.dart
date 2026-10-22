@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../ui/app_feedback.dart';
 
-/// RightTouch brand logo presented as an elegant round emblem with visible logo icon and brand lettering.
+/// RightTouch brand logo presented as an elegant curved rectangle emblem with visible logo icon and brand lettering.
 class BrandLogo extends StatelessWidget {
   final double? width;
   final double? height;
   final double? iconSize;
   final double? fontSize;
   final bool isCircular;
+  final BorderRadius? borderRadius;
 
   const BrandLogo({
     super.key,
@@ -16,39 +17,30 @@ class BrandLogo extends StatelessWidget {
     this.height,
     this.iconSize,
     this.fontSize,
-    this.isCircular = true,
+    this.isCircular = false,
+    this.borderRadius,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (!isCircular) {
-      final effectiveWidth = width ?? (iconSize != null ? iconSize! * 4 : 180.0);
-      return Image.asset(
-        'assets/images/logo.png',
-        width: effectiveWidth,
-        height: height,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => _fallback(),
-      );
-    }
-
-    final double targetSize = height ??
-        (width != null ? (width! * 0.82).clamp(118.0, 156.0) : 142.0);
-    final double iconH = (iconSize ?? (targetSize * 0.46)).clamp(42.0, 72.0);
-    final double fontS = fontSize ?? (targetSize * 0.095).clamp(11.0, 14.5);
+    final double targetWidth = width != null ? (width! * 0.84).clamp(120.0, 160.0) : 144.0;
+    final double targetHeight = height ?? (targetWidth * 0.76).clamp(96.0, 126.0);
+    final double iconH = (iconSize ?? (targetHeight * 0.44)).clamp(38.0, 58.0);
+    final double fontS = fontSize ?? (targetWidth * 0.088).clamp(11.0, 14.0);
 
     return Container(
-      width: targetSize,
-      height: targetSize,
+      width: isCircular ? (height ?? width ?? 142.0) : targetWidth,
+      height: isCircular ? (height ?? width ?? 142.0) : targetHeight,
       decoration: BoxDecoration(
         color: Colors.white,
-        shape: BoxShape.circle,
+        shape: isCircular ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: isCircular ? null : (borderRadius ?? BorderRadius.circular(22)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x1816A34A),
-            blurRadius: 20,
-            spreadRadius: 2,
-            offset: Offset(0, 5),
+            blurRadius: 18,
+            spreadRadius: 1,
+            offset: Offset(0, 4),
           ),
           BoxShadow(
             color: Color(0x0C000000),
@@ -63,7 +55,7 @@ class BrandLogo extends StatelessWidget {
       ),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -83,9 +75,9 @@ class BrandLogo extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: targetSize * 0.03),
+              SizedBox(height: targetHeight * 0.035),
               SizedBox(
-                width: targetSize * 0.86,
+                width: targetWidth * 0.88,
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
@@ -106,29 +98,6 @@ class BrandLogo extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _fallback() {
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(
-        width: 48,
-        height: 48,
-        decoration: const BoxDecoration(
-          color: Color(0xFFFFF7E0),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.wb_sunny_rounded,
-            size: 30, color: Color(0xFFF5A623)),
-      ),
-      const SizedBox(height: 8),
-      const Text('RIGHT TOUCH',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.8,
-            color: AppColors.primary,
-          )),
-    ]);
   }
 }
 

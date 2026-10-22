@@ -211,23 +211,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         const SizedBox(height: 14),
 
-                        // 1. BRAND LOGO (Right Touch lightbulb + text - Fixed)
-                        const Center(
-                          child: BrandLogo(width: 175),
+                        const SizedBox(height: 10),
+
+                        // 1. BRAND LOGO (Standalone emblem directly on background)
+                        Center(
+                          child: Image.asset(
+                            'assets/images/logo_icon.png',
+                            height: 108,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const BrandLogo(width: 150),
+                          ),
                         ),
 
-                        const SizedBox(height: 22),
+                        const SizedBox(height: 14),
 
-                        // 2. HEADING & SUBHEADING (Dynamic based on selected card)
-                        const Text(
-                          'Welcome to Right Touch',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.4,
-                            color: Color(0xFF0F172A),
-                          ),
+                        // 2. BRAND NAME: RIGHT TOUCH
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Text(
+                              'RIGHT ',
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.6,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            Text(
+                              'TOUCH',
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.6,
+                                color: Color(0xFF00A859),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 6),
                         AnimatedSwitcher(
@@ -239,7 +259,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             key: ValueKey<bool>(_isSignup),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              fontSize: 14.5,
+                              fontSize: 14,
                               fontWeight: FontWeight.w500,
                               color: Color(0xFF64748B),
                             ),
@@ -266,17 +286,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 }
                               },
                               child: Container(
-                                height: 52,
+                                height: 50,
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
+                                  color: const Color(0xFFF1F5F9).withValues(alpha: 0.8),
                                   borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: const Color(0xFFE2E8F0).withValues(alpha: 0.6)),
                                 ),
                                 child: Row(
                                   children: [
                                     Expanded(
                                       child: _buildSegmentTab(
                                         label: 'Login',
+                                        icon: Icons.person_rounded,
                                         isSelected: !_isSignup,
                                         onTap: () => _onTabSelected(0),
                                       ),
@@ -284,6 +306,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     Expanded(
                                       child: _buildSegmentTab(
                                         label: 'Sign up',
+                                        icon: Icons.person_add_alt_1_rounded,
                                         isSelected: _isSignup,
                                         onTap: () => _onTabSelected(1),
                                       ),
@@ -434,30 +457,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // 5. SECURITY BADGE
-              Row(
-                children: const [
-                  Icon(
-                    Icons.verified_user_rounded,
-                    size: 16,
-                    color: Color(0xFF10B981),
-                  ),
-                  SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      "Your number is safe with us. We'll send a 4-digit OTP.",
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
               ),
 
               if (_err != null) ...[
@@ -660,9 +659,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  /// Segmented Tab Button with white card and emerald green text + underline
+  /// Segmented Tab Button with white card, icon, and emerald green text
   Widget _buildSegmentTab({
     required String label,
+    required IconData icon,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
@@ -678,38 +678,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           boxShadow: isSelected
               ? const [
                   BoxShadow(
-                    color: Color(0x0C000000),
+                    color: Color(0x14000000),
                     blurRadius: 6,
                     offset: Offset(0, 2),
                   ),
                 ]
               : null,
         ),
-        child: Column(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? const Color(0xFF00A859) : const Color(0xFF64748B),
+            ),
+            const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 14.5,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 color: isSelected
-                    ? const Color(0xFF00A859) // Vivid brand green
+                    ? const Color(0xFF00A859)
                     : const Color(0xFF64748B),
               ),
             ),
-            if (isSelected)
-              Container(
-                margin: const EdgeInsets.only(top: 3),
-                width: 32,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00A859),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              )
-            else
-              const SizedBox(height: 3),
           ],
         ),
       ),
@@ -978,6 +972,36 @@ class _LoginBackgroundWavePainter extends CustomPainter {
     path2.lineTo(0, size.height);
     path2.close();
     canvas.drawPath(path2, wave2);
+
+    // Decorative Green Leaves matching reference design (bottom waves only)
+    _drawLeaf(canvas, Offset(size.width * 0.10, size.height * 0.88), 30, 0.4);
+    _drawLeaf(canvas, Offset(size.width * 0.90, size.height * 0.90), 28, -0.4);
+  }
+
+  void _drawLeaf(Canvas canvas, Offset center, double size, double angle) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(angle);
+
+    final leafPaint = Paint()
+      ..color = const Color(0xFF22C55E).withValues(alpha: 0.85)
+      ..style = PaintingStyle.fill;
+
+    final leafPath = Path();
+    leafPath.moveTo(0, -size / 2);
+    leafPath.cubicTo(size * 0.45, -size * 0.35, size * 0.5, size * 0.3, 0, size / 2);
+    leafPath.cubicTo(-size * 0.5, size * 0.3, -size * 0.45, -size * 0.35, 0, -size / 2);
+    leafPath.close();
+
+    canvas.drawPath(leafPath, leafPaint);
+
+    final veinPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.45)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    canvas.drawLine(Offset(0, -size * 0.4), Offset(0, size * 0.4), veinPaint);
+    canvas.restore();
   }
 
   @override

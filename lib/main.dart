@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/socket_service.dart';
 import 'presentation/providers/providers.dart';
 
 Future<void> main() async {
@@ -80,6 +81,9 @@ Future<void> main() async {
   NotificationService.instance.initialize(container).catchError((e) {
     debugPrint('[Main] Notification init error: $e');
   });
+
+  // Real-time Socket.IO Connection (Customer events)
+  SocketService.instance.initialize(container);
 
   runApp(
     UncontrolledProviderScope(

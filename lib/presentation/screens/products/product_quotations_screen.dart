@@ -169,10 +169,11 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
         showSuccess(
           context,
           title: 'Quotation Accepted',
-          message: 'Quotation accepted! A confirmed product order has been created.',
+          message: 'Quotation accepted! A confirmed product order has been created. Proceeding to orders...',
           actionLabel: 'View Orders',
           onAction: () => _tabController.animateTo(3),
         );
+        _tabController.animateTo(3);
       }
     } catch (e) {
       if (mounted) {
@@ -187,14 +188,61 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
   }
 
   Future<void> _declineQuotation(QuotationModel q) async {
+    final reasonCtrl = TextEditingController(text: 'Price is higher than expected.');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dCtx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Decline Quotation', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Please provide a reason so our team can revise the proposal for you:',
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonCtrl,
+              maxLines: 2,
+              maxLength: 500,
+              decoration: InputDecoration(
+                hintText: 'Enter reason...',
+                counterText: '',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dCtx, false),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(dCtx, true),
+            child: const Text('Decline Quote', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     try {
-      await ref.read(supportRepoProvider).rejectQuote(q.id);
+      await ref.read(supportRepoProvider).rejectQuote(q.id, reasonCtrl.text);
       ref.invalidate(quotationListProvider);
       if (mounted) {
         showSuccess(
           context,
           title: 'Quotation Declined',
-          message: 'You have declined this quotation.',
+          message: 'You have declined this quotation. Our team will review your feedback.',
         );
       }
     } catch (e) {
@@ -205,6 +253,32 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
           title: 'Failed to Decline',
           message: appErr.userMessage,
         );
+      }
+    }
+  }
+
+  Future<void> _payForProductBooking(ProductBookingModel b) async {
+    if (b.paymentStatus?.toLowerCase() == 'paid') {
+      showError(context, title: 'Already Paid', message: 'This product order is already marked as paid.');
+      return;
+    }
+    try {
+      await ref.read(paymentRepoProvider).createOrder(b.id);
+      ref.invalidate(productBookingsProvider);
+      ref.invalidate(paymentListProvider);
+      if (mounted) {
+        showSuccess(
+          context,
+          title: 'Payment Order Initiated',
+          message: 'Payment order created. You can track transaction status in Payments.',
+          actionLabel: 'View Payments',
+          onAction: () => context.push('/payments'),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final appErr = mapException(e);
+        showError(context, title: 'Payment Failed', message: appErr.userMessage);
       }
     }
   }
@@ -244,134 +318,231 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        final isPending = q.status.toLowerCase() == 'pending';
+        final st = q.status.toLowerCase();
+        final isActionable = st == 'sent' || st == 'viewed' || st == 'pending';
+        final fin = q.financialSnapshot;
+
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE2E8F0),
-                      borderRadius: BorderRadius.circular(2),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.primarySoft,
-                        borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primarySoft,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.request_quote_rounded, color: AppColors.primary, size: 24),
                       ),
-                      child: const Icon(Icons.request_quote_rounded, color: AppColors.primary, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              q.title ?? 'Custom Equipment Quotation',
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                if (q.quotationNumber != null) ...[
+                                  Text(
+                                    q.quotationNumber!,
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isActionable ? const Color(0xFFFEF3C7) : AppColors.primarySoft,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    q.status.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: isActionable ? const Color(0xFFD97706) : AppColors.primaryDark,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Financial Breakdown Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                    child: Column(
+                      children: [
+                        if (fin != null) ...[
+                          if (fin['baseAmountPaise'] is num)
+                            _buildPriceLine('Base Equipment', '₹${((fin['baseAmountPaise'] as num) / 100).toStringAsFixed(0)}'),
+                          if ((fin['installationAmountPaise'] is num) && (fin['installationAmountPaise'] as num) > 0)
+                            _buildPriceLine('Installation & Setup', '₹${((fin['installationAmountPaise'] as num) / 100).toStringAsFixed(0)}'),
+                          if ((fin['additionalChargesPaise'] is num) && (fin['additionalChargesPaise'] as num) > 0)
+                            _buildPriceLine('Additional Charges', '₹${((fin['additionalChargesPaise'] as num) / 100).toStringAsFixed(0)}'),
+                          if ((fin['discountPaise'] is num) && (fin['discountPaise'] as num) > 0)
+                            _buildPriceLine('Discount Applied', '- ₹${((fin['discountPaise'] as num) / 100).toStringAsFixed(0)}', isDiscount: true),
+                          if (fin['gstAmountPaise'] is num)
+                            _buildPriceLine('GST (${fin['gstPercent'] ?? 18}%)', '₹${((fin['gstAmountPaise'] as num) / 100).toStringAsFixed(0)}'),
+                          const Divider(height: 20),
+                        ],
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Authoritative Total', style: TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w800)),
+                            Text(
+                              inr(q.amount),
+                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primary),
+                            ),
+                          ],
+                        ),
+                        if (q.validUntil != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Valid Until', style: TextStyle(color: Color(0xFF64748B), fontSize: 11.5)),
+                              Text(fmtDate(q.validUntil), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5, color: Color(0xFFD97706))),
+                            ],
+                          ),
+                        ],
+                        if (q.createdAt != null) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Received On', style: TextStyle(color: Color(0xFF64748B), fontSize: 11.5)),
+                              Text(fmtDate(q.createdAt), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11.5, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  if (q.adminNotes != null && q.adminNotes!.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            q.title ?? 'Custom Equipment Quotation',
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Status: ${q.status.toUpperCase()}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isPending ? const Color(0xFFD97706) : AppColors.primary,
-                            ),
-                          ),
+                          const Text('Technician Notes:', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF334155))),
+                          const SizedBox(height: 4),
+                          Text(q.adminNotes!, style: const TextStyle(fontSize: 12.5, color: Color(0xFF475569))),
                         ],
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Quoted Total', style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600)),
-                          Text(
-                            inr(q.amount),
-                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primary),
+
+                  if (q.termsAndConditions != null && q.termsAndConditions!.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      'Terms: ${q.termsAndConditions}',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                    ),
+                  ],
+
+                  if (isActionable) ...[
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _acceptQuotation(q);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text('Accept & Order', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                           ),
-                        ],
-                      ),
-                      if (q.createdAt != null) ...[
-                        const Divider(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Received On', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
-                            Text(fmtDate(q.createdAt), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                          ],
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _declineQuotation(q);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF0F172A),
+                              side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                          ),
                         ),
                       ],
-                    ],
-                  ),
-                ),
-                if (isPending) ...[
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _acceptQuotation(q);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('Accept & Order', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            _declineQuotation(q);
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF0F172A),
-                            side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPriceLine(String label, String value, {bool isDiscount = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isDiscount ? const Color(0xFF16A34A) : const Color(0xFF1E293B),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -774,7 +945,25 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text('Payment Status', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
-                                Text(item.paymentStatus!.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF334155))),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: (item.paymentStatus!.toLowerCase() == 'paid')
+                                        ? const Color(0xFFDCFCE7)
+                                        : const Color(0xFFFEF3C7),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    (item.paymentStatus!.toLowerCase() == 'paid') ? 'PAID' : 'PAYMENT PENDING',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 11,
+                                      color: (item.paymentStatus!.toLowerCase() == 'paid')
+                                          ? const Color(0xFF16A34A)
+                                          : const Color(0xFFD97706),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ],
@@ -791,8 +980,32 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                         ],
                       ),
                     ),
+                    if (!isCancelled && item.paymentStatus?.toLowerCase() != 'paid') ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _payForProductBooking(item);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.payment_rounded, size: 18),
+                          label: Text(
+                            'Pay Now (${inr(item.amount ?? 0)})',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ],
                     if (!isCancelled) ...[
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -1180,21 +1393,25 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
           const SizedBox(height: 8),
           Row(
             children: [
-              for (final method in ['phone', 'whatsapp', 'email']) ...[
+              for (final entry in [
+                {'label': 'WhatsApp', 'val': 'whatsapp'},
+                {'label': 'Call', 'val': 'call'},
+                {'label': 'Both', 'val': 'both'},
+              ]) ...[
                 ChoiceChip(
-                  label: Text(method == 'whatsapp' ? 'WhatsApp' : method[0].toUpperCase() + method.substring(1)),
-                  selected: _contactMethod == method,
+                  label: Text(entry['label']!),
+                  selected: _contactMethod == entry['val'],
                   selectedColor: AppColors.primarySoft,
                   backgroundColor: Colors.white,
                   side: BorderSide(
-                    color: _contactMethod == method ? AppColors.primary : const Color(0xFFE2E8F0),
+                    color: _contactMethod == entry['val'] ? AppColors.primary : const Color(0xFFE2E8F0),
                     width: 1.2,
                   ),
                   labelStyle: TextStyle(
-                    color: _contactMethod == method ? AppColors.primaryDark : const Color(0xFF475569),
-                    fontWeight: _contactMethod == method ? FontWeight.w800 : FontWeight.w600,
+                    color: _contactMethod == entry['val'] ? AppColors.primaryDark : const Color(0xFF475569),
+                    fontWeight: _contactMethod == entry['val'] ? FontWeight.w800 : FontWeight.w600,
                   ),
-                  onSelected: (_) => setState(() => _contactMethod = method),
+                  onSelected: (_) => setState(() => _contactMethod = entry['val']!),
                 ),
                 const SizedBox(width: 8),
               ],
@@ -1236,7 +1453,8 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
             itemCount: list.length,
             itemBuilder: (_, i) {
               final x = list[i];
-              final isPending = x.status.toLowerCase() == 'pending';
+              final st = x.status.toLowerCase();
+              final isActionable = st == 'sent' || st == 'viewed' || st == 'pending';
               return Container(
                 margin: const EdgeInsets.only(bottom: 14),
                 padding: const EdgeInsets.all(16),
@@ -1263,15 +1481,27 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            x.title ?? 'Custom Equipment Quotation',
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A)),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                x.title ?? 'Custom Equipment Quotation',
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A)),
+                              ),
+                              if (x.quotationNumber != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  x.quotationNumber!,
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isPending ? const Color(0xFFFEF3C7) : AppColors.primarySoft,
+                            color: isActionable ? const Color(0xFFFEF3C7) : AppColors.primarySoft,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -1279,7 +1509,7 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
-                              color: isPending ? const Color(0xFFD97706) : AppColors.primaryDark,
+                              color: isActionable ? const Color(0xFFD97706) : AppColors.primaryDark,
                             ),
                           ),
                         ),
@@ -1293,11 +1523,18 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Quoted Price', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                            const Text('Quoted Total', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
                             Text(
                               inr(x.amount),
                               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
                             ),
+                            if (x.validUntil != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Valid until ${fmtDate(x.validUntil)}',
+                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w500, color: Color(0xFFD97706)),
+                              ),
+                            ],
                           ],
                         ),
                         OutlinedButton(
@@ -1311,7 +1548,7 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                         ),
                       ],
                     ),
-                    if (isPending) ...[
+                    if (isActionable) ...[
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -1516,9 +1753,24 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A)),
                           ),
                         ),
-                        Text(
-                          b.status.toUpperCase(),
-                          style: const TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.w900, fontSize: 11),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: (b.paymentStatus?.toLowerCase() == 'paid')
+                                ? const Color(0xFFDCFCE7)
+                                : const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            (b.paymentStatus?.toLowerCase() == 'paid') ? 'PAID' : 'PAYMENT PENDING',
+                            style: TextStyle(
+                              color: (b.paymentStatus?.toLowerCase() == 'paid')
+                                  ? const Color(0xFF16A34A)
+                                  : const Color(0xFFD97706),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10.5,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -1529,50 +1781,68 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                       ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => _showProductBookingDetailSheet(b),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF0F172A),
-                            side: const BorderSide(color: Color(0xFFCBD5E1)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          ),
-                          child: const Text('View Order', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                        ),
-                        if (b.status.toLowerCase() != 'cancelled') ...[
-                          const SizedBox(width: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
                           OutlinedButton(
-                            onPressed: () => _showUpdateBookingQuantityModal(b),
+                            onPressed: () => _showProductBookingDetailSheet(b),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                              side: const BorderSide(color: AppColors.primary),
+                              foregroundColor: const Color(0xFF0F172A),
+                              side: const BorderSide(color: Color(0xFFCBD5E1)),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
-                            child: const Text('Update Qty', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                            child: const Text('View Order', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                          ),
+                          if (b.status.toLowerCase() != 'cancelled' && b.paymentStatus?.toLowerCase() != 'paid') ...[
+                            const SizedBox(width: 8),
+                            FilledButton.icon(
+                              onPressed: () => _payForProductBooking(b),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              icon: const Icon(Icons.payment_rounded, size: 14),
+                              label: const Text('Pay Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                            ),
+                          ],
+                          if (b.status.toLowerCase() != 'cancelled') ...[
+                            const SizedBox(width: 8),
+                            OutlinedButton(
+                              onPressed: () => _showUpdateBookingQuantityModal(b),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: const BorderSide(color: AppColors.primary),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              child: const Text('Update Qty', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                            ),
+                          ],
+                          const SizedBox(width: 8),
+                          Builder(
+                            builder: (context) {
+                              final myRatings = ref.watch(myRatingsProvider).valueOrNull ?? [];
+                              final hasRated = myRatings.any((r) => r.bookingId == b.id);
+                              return OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: hasRated ? const Color(0xFF16A34A) : const Color(0xFF0F172A),
+                                  side: BorderSide(color: hasRated ? const Color(0xFFBBF7D0) : const Color(0xFFCBD5E1)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                                icon: Icon(hasRated ? Icons.star_rounded : Icons.star_outline_rounded, size: 16, color: hasRated ? const Color(0xFFF59E0B) : null),
+                                label: Text(hasRated ? 'Edit Review' : 'Rate Product', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                                onPressed: () => _rateProduct(b),
+                              );
+                            },
                           ),
                         ],
-                        const Spacer(),
-                        Builder(
-                          builder: (context) {
-                            final myRatings = ref.watch(myRatingsProvider).valueOrNull ?? [];
-                            final hasRated = myRatings.any((r) => r.bookingId == b.id);
-                            return OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: hasRated ? const Color(0xFF16A34A) : const Color(0xFF0F172A),
-                                side: BorderSide(color: hasRated ? const Color(0xFFBBF7D0) : const Color(0xFFCBD5E1)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              ),
-                              icon: Icon(hasRated ? Icons.star_rounded : Icons.star_outline_rounded, size: 16, color: hasRated ? const Color(0xFFF59E0B) : null),
-                              label: Text(hasRated ? 'Edit Review' : 'Rate Product', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                              onPressed: () => _rateProduct(b),
-                            );
-                          },
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),

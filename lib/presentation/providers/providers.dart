@@ -8,9 +8,11 @@ import '../../data/datasources/remote_gateway.dart';
 import '../../data/models/models.dart';
 import '../../data/repositories/repositories.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/services/socket_service.dart';
 
 // ---------- infra ----------
 final tokenStorageProvider = Provider<TokenStorage>((_) => TokenStorage());
+final socketServiceProvider = Provider<SocketService>((_) => SocketService.instance);
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient(ref.watch(tokenStorageProvider)));
 final gatewayProvider = Provider<RemoteGateway>((ref) => RemoteGateway(ref.watch(apiClientProvider)));
 final authRepoProvider = Provider((ref) => AuthRepository(ref.watch(gatewayProvider)));
@@ -113,6 +115,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
                 isGuest: false,
                 loading: false);
             NotificationService.instance.syncCurrentToken();
+            if (t.cachedToken != null && t.cachedToken!.isNotEmpty) {
+              SocketService.instance.connect(t.cachedToken!);
+            }
           } else {
             // Access token dead → try silent refresh before forcing login.
             final refreshed = await refreshSession();
@@ -214,6 +219,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       _invalidateUserData();
       NotificationService.instance.syncCurrentToken();
+      if (s.token != null && s.token!.isNotEmpty) {
+        SocketService.instance.connect(s.token!);
+      }
       return null;
     } catch (e) {
       state = state.copyWith(loading: false);
@@ -242,6 +250,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final s = await ref.read(authRepoProvider).refresh(rt);
       await _persistSession(s);
       ref.read(tokenStorageProvider).cachedToken = s.token;
+      if (s.token != null && s.token!.isNotEmpty) {
+        SocketService.instance.updateTokenAndReconnect(s.token!);
+      }
       return true;
     } catch (_) {
       return false;
@@ -250,6 +261,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout({bool allDevices = false}) async {
     try {
+      SocketService.instance.disconnect();
       await NotificationService.instance.unregisterToken();
       if (allDevices) {
         await ref.read(gatewayProvider).logoutAll();

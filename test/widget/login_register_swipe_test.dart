@@ -18,8 +18,9 @@ void main() {
       await tester.pumpWidget(buildTestScreen());
       await tester.pumpAndSettle();
 
-      // Heading & subtitle
-      expect(find.text('Welcome to Right Touch'), findsOneWidget);
+      // Brand header & subtitle
+      expect(find.text('RIGHT '), findsOneWidget);
+      expect(find.text('TOUCH'), findsOneWidget);
       expect(find.text('Sign in to continue to your account'), findsOneWidget);
 
       // Segment tabs
@@ -31,10 +32,10 @@ void main() {
       expect(find.text('+91'), findsOneWidget);
       expect(find.text('Enter 10-digit number'), findsOneWidget);
 
-      // Security note
+      // Security note removed per design update
       expect(
         find.text("Your number is safe with us. We'll send a 4-digit OTP."),
-        findsOneWidget,
+        findsNothing,
       );
 
       // Buttons & Divider

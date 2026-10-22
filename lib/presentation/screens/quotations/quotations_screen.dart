@@ -100,7 +100,24 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
             itemCount: list.length,
             itemBuilder: (_, i) {
               final x = list[i];
-              final isPending = x.status.toLowerCase() == 'pending';
+              final isPending = ['pending', 'sent', 'viewed'].contains(x.status.toLowerCase());
+              Color badgeBg;
+              Color badgeFg;
+              switch (x.status.toLowerCase()) {
+                case 'accepted':
+                  badgeBg = const Color(0xFFDCFCE7);
+                  badgeFg = const Color(0xFF16A34A);
+                  break;
+                case 'rejected':
+                case 'declined':
+                case 'expired':
+                  badgeBg = const Color(0xFFFEE2E2);
+                  badgeFg = const Color(0xFFDC2626);
+                  break;
+                default:
+                  badgeBg = const Color(0xFFFEF3C7);
+                  badgeFg = const Color(0xFFD97706);
+              }
               return Container(
                 margin: const EdgeInsets.only(bottom: 14),
                 padding: const EdgeInsets.all(16),
@@ -135,7 +152,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isPending ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
+                            color: badgeBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -143,7 +160,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
-                              color: isPending ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+                              color: badgeFg,
                             ),
                           ),
                         ),
@@ -386,9 +403,24 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                           ),
                         ),
-                        Text(
-                          b.status.toUpperCase(),
-                          style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w900, fontSize: 11),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: (b.paymentStatus?.toLowerCase() == 'paid')
+                                ? const Color(0xFFDCFCE7)
+                                : const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            (b.paymentStatus?.toLowerCase() == 'paid') ? 'PAID' : 'PAYMENT PENDING',
+                            style: TextStyle(
+                              color: (b.paymentStatus?.toLowerCase() == 'paid')
+                                  ? const Color(0xFF16A34A)
+                                  : const Color(0xFFD97706),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10.5,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -398,6 +430,37 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                         inr(b.amount),
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                       ),
+                    if (b.status.toLowerCase() != 'cancelled' && b.paymentStatus?.toLowerCase() != 'paid') ...[
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        onPressed: () async {
+                          try {
+                            await ref.read(paymentRepoProvider).createOrder(b.id);
+                            ref.invalidate(productBookingsProvider);
+                            ref.invalidate(paymentListProvider);
+                            if (mounted) {
+                              showSuccess(
+                                context,
+                                title: 'Payment Order Initiated',
+                                message: 'Payment order created. You can track transaction status in Payments.',
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              showError(context, title: 'Payment Failed', message: mapException(e).userMessage);
+                            }
+                          }
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF16A34A),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        ),
+                        icon: const Icon(Icons.payment_rounded, size: 14),
+                        label: const Text('Pay Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                      ),
+                    ],
                   ],
                 ),
               );

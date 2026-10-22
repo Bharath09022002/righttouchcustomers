@@ -45,6 +45,27 @@ AppException mapException(Object error) {
     }
     final cleaned = error.message.trim();
     if (cleaned.isNotEmpty) {
+      if (cleaned.toUpperCase().contains('NOT_PAYABLE')) {
+        return AppException(
+          'This service or product order cannot be paid right now. For service bookings, payment is collected only after the technician completes the job.',
+          rawMessage: cleaned,
+          statusCode: error.statusCode,
+        );
+      }
+      if (cleaned.toUpperCase().contains('UNDER_REVIEW')) {
+        return AppException(
+          'This payment is currently under manual review. Please wait or contact customer support.',
+          rawMessage: cleaned,
+          statusCode: error.statusCode,
+        );
+      }
+      if (cleaned.toUpperCase().contains('PAYMENT_IN_FLIGHT')) {
+        return AppException(
+          'A payment attempt is currently processing. Please wait a few moments before trying again.',
+          rawMessage: cleaned,
+          statusCode: error.statusCode,
+        );
+      }
       return AppException(cleaned, rawMessage: cleaned, statusCode: error.statusCode);
     }
   }
@@ -76,6 +97,27 @@ AppException mapException(Object error) {
       return AppException('Please sign in to continue.', rawMessage: raw, statusCode: 401);
     }
     if (raw.isNotEmpty && raw != 'Unknown error') {
+      if (raw.toUpperCase().contains('NOT_PAYABLE')) {
+        return AppException(
+          'This service or product order cannot be paid right now. For service bookings, payment is collected only after the technician completes the job.',
+          rawMessage: raw,
+          statusCode: code,
+        );
+      }
+      if (raw.toUpperCase().contains('UNDER_REVIEW')) {
+        return AppException(
+          'This payment is currently under manual review. Please wait or contact customer support.',
+          rawMessage: raw,
+          statusCode: code,
+        );
+      }
+      if (raw.toUpperCase().contains('PAYMENT_IN_FLIGHT')) {
+        return AppException(
+          'A payment attempt is currently processing. Please wait a few moments before trying again.',
+          rawMessage: raw,
+          statusCode: code,
+        );
+      }
       return AppException(raw, rawMessage: raw, statusCode: code);
     }
     if (code != null) {
