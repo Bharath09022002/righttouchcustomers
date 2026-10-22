@@ -206,6 +206,25 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen>
   Future<void> _reverseGeocode(double lat, double lng) async {
     setState(() => _geocoding = true);
     try {
+      // 1. Try backend reverse geocoding API
+      final backendResult = await ref.read(addressRepoProvider).reverseGeocode(lat, lng);
+      if (backendResult != null && backendResult.isNotEmpty) {
+        final lineVal = backendResult['addressLine'] ?? backendResult['line'] ?? backendResult['formattedAddress'] ?? '';
+        final cityVal = backendResult['city'] ?? backendResult['town'] ?? '';
+        final stateVal = backendResult['state'] ?? '';
+        final pinVal = backendResult['pincode'] ?? backendResult['zipcode'] ?? backendResult['postalCode'] ?? '';
+
+        if (lineVal.toString().isNotEmpty) _line.text = lineVal.toString();
+        if (cityVal.toString().isNotEmpty) _city.text = cityVal.toString();
+        if (stateVal.toString().isNotEmpty) _state.text = stateVal.toString();
+        if (pinVal.toString().isNotEmpty) _pin.text = pinVal.toString();
+
+        if (lineVal.toString().isNotEmpty || cityVal.toString().isNotEmpty) {
+          return;
+        }
+      }
+
+      // 2. Fallback to OpenStreetMap Nominatim
       final dio = Dio();
       final res = await dio.get(
         'https://nominatim.openstreetmap.org/reverse',

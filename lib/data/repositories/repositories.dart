@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../core/network/api_result.dart';
+import '../../core/storage/local_cache.dart';
 import '../datasources/remote_gateway.dart';
 import '../models/models.dart';
 
@@ -13,6 +14,10 @@ List<T> _parseList<T>(dynamic raw, T Function(dynamic) f) {
     ]) {
       final v = raw[k];
       if (v is List) return v.map(f).toList();
+      if (v is Map) {
+        final nested = _parseList(v, f);
+        if (nested.isNotEmpty) return nested;
+      }
     }
   }
   return [];
@@ -498,6 +503,22 @@ class ProductRepository {
   }
 
   Future<ProductModel> product(String id) async {
+    try {
+      final r = await gw.product(id);
+      if (r is ApiOk) {
+        final d = r.data;
+        final m = asMap(d);
+        final rawProd = m.containsKey('product')
+            ? m['product']
+            : (m.containsKey('result') ? m['result'] : (m.containsKey('data') ? m['data'] : d));
+        if (rawProd != null) {
+          final prod = ProductModel.fromJson(rawProd);
+          if (prod.id.isNotEmpty && prod.name.isNotEmpty) {
+            return prod;
+          }
+        }
+      }
+    } catch (_) {}
     final list = await products();
     return list.firstWhere(
       (p) => p.id == id,
@@ -574,6 +595,23 @@ class BookingRepository {
       }
     }
     return ['Plan changed', 'Booked by mistake', 'Found another provider', 'Price too high', 'Other'];
+  }
+
+  Future<Map<String, dynamic>> completionStatus(String id) async {
+    final r = await gw.bookingCompletionStatus(id);
+    if (r is ApiOk) return asMap(r.data);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    return {};
+  }
+
+  Future<void> delete(String id) async {
+    final r = await gw.deleteBooking(id);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+  }
+
+  Future<void> deleteAll() async {
+    final r = await gw.deleteAllBookings();
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
   }
 }
 
@@ -666,9 +704,37 @@ class AddressRepository {
     if (r is ApiErr) throw ApiException(r.message);
   }
 
+  Future<AddressModel?> getDefault() async {
+    try {
+      final r = await gw.defaultAddress();
+      if (r is ApiOk && r.data != null) {
+        final m = asMap(r.data);
+        final item = m.containsKey('result')
+            ? m['result']
+            : (m.containsKey('address') ? m['address'] : m);
+        if (item is Map && item.isNotEmpty) {
+          final addr = AddressModel.fromJson(item);
+          if (addr.id.isNotEmpty) {
+            LocalCacheService.instance.cacheDefaultAddressId(addr.id);
+            return addr;
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> setDefault(AddressModel a) async {
     final r = await gw.setDefault({'addressId': a.id, ...a.toJson()});
     if (r is ApiErr) throw ApiException(r.message);
+  }
+
+  Future<Map<String, dynamic>?> reverseGeocode(double lat, double lng) async {
+    try {
+      final r = await gw.reverseGeocode(lat, lng);
+      if (r is ApiOk && r.data != null) return asMap(r.data);
+    } catch (_) {}
+    return null;
   }
 }
 
@@ -732,14 +798,71 @@ class SupportRepository {
     return [];
   }
 
-  Future<void> submitQuoteRequest(String requirement, {String? addressId, String? contactMethod}) async {
-    final body = {
+  Future<void> submitQuoteRequest(
+    String requirement, {
+    String? productId,
+    int? quantity,
+    String? addressId,
+    String? locationType,
+    String? additionalNotes,
+    String? contactMethod,
+  }) async {
+    String? finalAddressId = addressId;
+    if (finalAddressId == null || finalAddressId.isEmpty) {
+      final cachedId = await LocalCacheService.instance.getCachedDefaultAddressId();
+      if (cachedId != null && cachedId.isNotEmpty) {
+        finalAddressId = cachedId;
+      }
+    }
+    if (finalAddressId == null || finalAddressId.isEmpty) {
+      try {
+        final defR = await gw.defaultAddress();
+        if (defR is ApiOk && defR.data != null) {
+          final m = asMap(defR.data);
+          final item = m.containsKey('result')
+              ? m['result']
+              : (m.containsKey('address') ? m['address'] : m);
+          if (item is Map) {
+            final parsedId = str(item['_id'] ?? item['id'] ?? item['addressId']);
+            if (parsedId.isNotEmpty) {
+              finalAddressId = parsedId;
+              LocalCacheService.instance.cacheDefaultAddressId(parsedId);
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    final body = <String, dynamic>{
+      if (productId != null && productId.isNotEmpty) 'productId': productId,
+      'quantity': quantity ?? 1,
+      'locationType': locationType ?? (finalAddressId != null && finalAddressId.isNotEmpty ? 'saved' : 'current'),
+      if (finalAddressId != null && finalAddressId.isNotEmpty) 'addressId': finalAddressId,
       'requirementDescription': requirement,
-      'locationType': addressId != null ? 'saved' : 'current',
-      if (addressId != null) 'addressId': addressId,
-      'preferredContactMethod': contactMethod ?? 'phone',
+      if (additionalNotes != null) 'additionalNotes': additionalNotes,
+      'preferredContactMethod': contactMethod ?? 'whatsapp',
     };
     final r = await gw.submitQuoteRequest(body);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+  }
+
+  Future<QuoteRequestModel> quoteRequest(String id) async {
+    final r = await gw.quoteRequest(id);
+    if (r is ApiOk) {
+      final d = r.data;
+      final m = asMap(d);
+      return QuoteRequestModel.fromJson(m.containsKey('request')
+          ? m['request']
+          : (m.containsKey('quoteRequest')
+              ? m['quoteRequest']
+              : (m.containsKey('result') ? m['result'] : d)));
+    }
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    throw ApiException('Quote request not found');
+  }
+
+  Future<void> updateQuoteRequest(String id, Map<String, dynamic> body) async {
+    final r = await gw.updateQuoteRequest(id, body);
     if (r is ApiErr) throw ApiException(r.message, r.statusCode);
   }
 
@@ -754,6 +877,26 @@ class SupportRepository {
       if (r is ApiOk) return _parseList(r.data, (e) => ProductBookingModel.fromJson(e));
     } catch (_) {}
     return [];
+  }
+
+  Future<ProductBookingModel> productBooking(String id) async {
+    final r = await gw.productBooking(id);
+    if (r is ApiOk) {
+      final d = r.data;
+      final m = asMap(d);
+      return ProductBookingModel.fromJson(m.containsKey('booking')
+          ? m['booking']
+          : (m.containsKey('productBooking')
+              ? m['productBooking']
+              : (m.containsKey('result') ? m['result'] : d)));
+    }
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    throw ApiException('Product booking not found');
+  }
+
+  Future<void> updateProductBookingQuantity(String id, int quantity) async {
+    final r = await gw.updateProductBooking(id, quantity);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
   }
 
   Future<void> cancelProductBooking(String id, [String? reason]) async {
@@ -819,6 +962,11 @@ class SupportRepository {
       if (r is ApiOk) return _parseList(r.data, (e) => ReportModel.fromJson(e));
     } catch (_) {}
     return [];
+  }
+
+  Future<void> withdrawReport(String id, [String? reason]) async {
+    final r = await gw.withdrawReport(id, reason);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
   }
 
   Future<List<String>> reportCategories() async {
@@ -904,6 +1052,26 @@ class SupportRepository {
         'deviceId': 'default',
       });
     } catch (_) {}
+  }
+
+  Future<void> markNotificationOpened(String id) async {
+    try {
+      await gw.notifOpened(id);
+    } catch (_) {}
+  }
+
+  Future<void> markNotificationReceived(String id) async {
+    try {
+      await gw.notifReceived(id);
+    } catch (_) {}
+  }
+
+  Future<Map<String, dynamic>?> getPermissions([String? deviceId]) async {
+    try {
+      final r = await gw.getPermissions(deviceId);
+      if (r is ApiOk && r.data != null) return asMap(r.data);
+    } catch (_) {}
+    return null;
   }
 }
 
@@ -994,6 +1162,13 @@ class RewardRepository {
       return _parseList(raw, (e) => RewardTransactionModel.fromJson(e));
     }
     return [];
+  }
+
+  Future<Map<String, dynamic>> reconcile() async {
+    final r = await gw.reconcileRewards();
+    if (r is ApiOk) return asMap(r.data);
+    if (r is ApiErr) throw ApiException(r.message, r.statusCode);
+    return {};
   }
 }
 

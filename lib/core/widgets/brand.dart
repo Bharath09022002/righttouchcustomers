@@ -2,29 +2,109 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../ui/app_feedback.dart';
 
-/// RightTouch brand logo using official asset logo.png.
+/// RightTouch brand logo presented as an elegant round emblem with visible logo icon and brand lettering.
 class BrandLogo extends StatelessWidget {
   final double? width;
   final double? height;
   final double? iconSize;
   final double? fontSize;
+  final bool isCircular;
+
   const BrandLogo({
     super.key,
     this.width,
     this.height,
     this.iconSize,
     this.fontSize,
+    this.isCircular = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveWidth = width ?? (iconSize != null ? iconSize! * 4 : 180.0);
-    return Image.asset(
-      'assets/images/logo.png',
-      width: effectiveWidth,
-      height: height,
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => _fallback(),
+    if (!isCircular) {
+      final effectiveWidth = width ?? (iconSize != null ? iconSize! * 4 : 180.0);
+      return Image.asset(
+        'assets/images/logo.png',
+        width: effectiveWidth,
+        height: height,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => _fallback(),
+      );
+    }
+
+    final double targetSize = height ??
+        (width != null ? (width! * 0.82).clamp(118.0, 156.0) : 142.0);
+    final double iconH = (iconSize ?? (targetSize * 0.46)).clamp(42.0, 72.0);
+    final double fontS = fontSize ?? (targetSize * 0.095).clamp(11.0, 14.5);
+
+    return Container(
+      width: targetSize,
+      height: targetSize,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1816A34A),
+            blurRadius: 20,
+            spreadRadius: 2,
+            offset: Offset(0, 5),
+          ),
+          BoxShadow(
+            color: Color(0x0C000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: const Color(0xFFDCFCE7),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/logo_icon.png',
+                height: iconH,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Image.asset(
+                  'assets/images/logo.png',
+                  height: iconH,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.lightbulb_rounded,
+                    color: const Color(0xFF16A34A),
+                    size: iconH,
+                  ),
+                ),
+              ),
+              SizedBox(height: targetSize * 0.03),
+              SizedBox(
+                width: targetSize * 0.86,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'RIGHT TOUCH',
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(
+                      fontSize: fontS,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      color: const Color(0xFF16A34A),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

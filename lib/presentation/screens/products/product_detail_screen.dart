@@ -20,8 +20,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   int _quantity = 1;
   bool _isAdding = false;
 
-  void _showQuoteModal(ProductModel p) {
+  void _showQuoteModal(ProductModel p) async {
     final noteCtrl = TextEditingController();
+    String contactMethod = 'whatsapp';
+
+    AddressModel? defaultAddr = ref.read(selectedAddressProvider);
+    defaultAddr ??= await ref.read(addressRepoProvider).getDefault();
+    if (!mounted) return;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -30,117 +36,186 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Request Quote',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F172A),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Request Quote',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    p.name,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF16A34A),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Our technical engineer will prepare a customized proposal with installation and subsidy details.',
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Default Address Card
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on_rounded, color: Color(0xFF16A34A), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            defaultAddr != null
+                                ? 'Site: ${defaultAddr.type} (${defaultAddr.line.isNotEmpty ? defaultAddr.line : defaultAddr.city})'
+                                : 'Site: Saved account address',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF166534),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Add site specifications (e.g. 5kW rooftop, 3-phase connection, battery backup...)',
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFF16A34A), width: 1.5),
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.pop(ctx),
+                  const SizedBox(height: 12),
+
+                  // Contact Method
+                  Row(
+                    children: [
+                      const Text(
+                        'Contact via:',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+                      ),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: const Text('WhatsApp', style: TextStyle(fontSize: 11.5)),
+                        selected: contactMethod == 'whatsapp',
+                        selectedColor: const Color(0xFFDCFCE7),
+                        onSelected: (_) => setModalState(() => contactMethod = 'whatsapp'),
+                      ),
+                      const SizedBox(width: 6),
+                      ChoiceChip(
+                        label: const Text('Phone Call', style: TextStyle(fontSize: 11.5)),
+                        selected: contactMethod == 'phone',
+                        selectedColor: const Color(0xFFDCFCE7),
+                        onSelected: (_) => setModalState(() => contactMethod = 'phone'),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final note = noteCtrl.text.trim();
+                        Navigator.pop(ctx);
+                        try {
+                          await ref.read(supportRepoProvider).submitQuoteRequest(
+                                note.isEmpty ? 'Quote requested for ${p.name}' : '${p.name}: $note',
+                                productId: p.id,
+                                quantity: _quantity > 0 ? _quantity : 1,
+                                addressId: defaultAddr?.id,
+                                locationType: defaultAddr?.id != null ? 'saved' : 'current',
+                                additionalNotes: note,
+                                contactMethod: contactMethod,
+                              );
+                          ref.invalidate(quotationListProvider);
+                          ref.invalidate(quoteRequestListProvider);
+                          if (mounted) {
+                            showSuccess(
+                              context,
+                              title: 'Quote Requested',
+                              message: 'Your quote request for ${p.name} has been submitted.',
+                              actionLabel: 'View My Requests',
+                              onAction: () => context.push('/quotations?tab=2'),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            final appErr = mapException(e);
+                            showError(
+                              context,
+                              title: 'Quote Request Failed',
+                              message: appErr.userMessage,
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text('Submit Request', style: TextStyle(fontWeight: FontWeight.w800)),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                p.name,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF16A34A),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Our technical engineer will prepare a customized proposal with installation and subsidy details.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: noteCtrl,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Add site specifications (e.g. 5kW rooftop, 3-phase connection, battery backup...)',
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFF16A34A), width: 1.5),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final note = noteCtrl.text.trim();
-                    Navigator.pop(ctx);
-                    try {
-                      await ref.read(supportRepoProvider).submitQuoteRequest(
-                            note.isEmpty ? 'Quote requested for ${p.name}' : '${p.name}: $note',
-                          );
-                      ref.invalidate(quotationListProvider);
-                      if (mounted) {
-                        showSuccess(
-                          context,
-                          title: 'Quote Requested',
-                          message: 'Your quote request for ${p.name} has been submitted.',
-                          actionLabel: 'View Quotes',
-                          onAction: () => context.push('/quotations'),
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        final appErr = mapException(e);
-                        showError(
-                          context,
-                          title: 'Quote Request Failed',
-                          message: appErr.userMessage,
-                        );
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF16A34A),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text('Submit Request', style: TextStyle(fontWeight: FontWeight.w800)),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     ).whenComplete(() => noteCtrl.dispose());
@@ -520,12 +595,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            // Add to cart / Buy button
+                            const SizedBox(width: 8),
+
+                            // Add to cart button
                             Expanded(
                               child: SizedBox(
                                 height: 48,
-                                child: ElevatedButton(
+                                child: ElevatedButton.icon(
                                   onPressed: _isAdding
                                       ? null
                                       : () async {
@@ -556,24 +632,53 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                             if (mounted) setState(() => _isAdding = false);
                                           }
                                         },
+                                  icon: _isAdding
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                        )
+                                      : const Icon(Icons.shopping_cart_outlined, size: 17),
+                                  label: Text(
+                                    inCart ? 'Add More' : 'Add to Cart',
+                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF16A34A),
                                     foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                     elevation: 0,
                                   ),
-                                  child: _isAdding
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                        )
-                                      : Text(
-                                          inCart ? 'Add More' : 'Add to Cart',
-                                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-                                        ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Add Quote button
+                            Expanded(
+                              child: SizedBox(
+                                height: 48,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _showQuoteModal(p),
+                                  icon: const Icon(Icons.request_quote_rounded, size: 17),
+                                  label: const Text(
+                                    'Add Quote',
+                                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF16A34A),
+                                    side: const BorderSide(color: Color(0xFF16A34A), width: 1.4),
+                                    backgroundColor: isDark
+                                        ? const Color(0xFF064E3B).withAlpha(60)
+                                        : const Color(0xFFF0FDF4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),

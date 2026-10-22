@@ -133,8 +133,26 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
       GoRoute(path: '/addresses', builder: (_, __) => const AddressesScreen()),
       GoRoute(path: '/add-address', builder: (_, __) => const AddAddressScreen()),
-      GoRoute(path: '/quotations', builder: (_, __) => const ProductQuotationsScreen()),
-      GoRoute(path: '/product-quotes', builder: (_, __) => const ProductQuotationsScreen()),
+      GoRoute(
+        path: '/quotations',
+        builder: (_, state) {
+          final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '') ??
+              (state.extra is int ? state.extra as int : 0);
+          final productId = state.uri.queryParameters['productId'] ??
+              (state.extra is Map ? (state.extra as Map)['productId'] as String? : null);
+          return ProductQuotationsScreen(initialTab: tab, preselectedProductId: productId);
+        },
+      ),
+      GoRoute(
+        path: '/product-quotes',
+        builder: (_, state) {
+          final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '') ??
+              (state.extra is int ? state.extra as int : 0);
+          final productId = state.uri.queryParameters['productId'] ??
+              (state.extra is Map ? (state.extra as Map)['productId'] as String? : null);
+          return ProductQuotationsScreen(initialTab: tab, preselectedProductId: productId);
+        },
+      ),
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
       GoRoute(path: '/edit-profile', builder: (_, __) => const EditProfileScreen()),

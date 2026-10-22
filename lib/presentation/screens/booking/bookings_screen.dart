@@ -23,6 +23,92 @@ class BookingsScreen extends ConsumerStatefulWidget {
 class _BookingsScreenState extends ConsumerState<BookingsScreen> {
   String _selectedFilter = 'All';
 
+  Future<void> _deleteSingleBooking(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Delete Booking?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        content: const Text(
+          'Remove this cancelled booking record permanently?',
+          style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(bookingRepoProvider).delete(id);
+        ref.invalidate(myBookingsProvider);
+        if (mounted) {
+          showSuccess(context, title: 'Deleted', message: 'Cancelled booking removed.');
+        }
+      } catch (e) {
+        if (mounted) {
+          showError(context, title: 'Delete Failed', message: mapException(e).userMessage);
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteAllCancelledBookings() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Clear All Cancelled?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        content: const Text(
+          'Are you sure you want to delete all cancelled bookings from your history? This action cannot be undone.',
+          style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(bookingRepoProvider).deleteAll();
+        ref.invalidate(myBookingsProvider);
+        if (mounted) {
+          showSuccess(context, title: 'History Cleared', message: 'All cancelled bookings have been deleted.');
+        }
+      } catch (e) {
+        if (mounted) {
+          showError(context, title: 'Clear Failed', message: mapException(e).userMessage);
+        }
+      }
+    }
+  }
+
   void _showHelpSheet() {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
@@ -308,14 +394,28 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                 const SizedBox(height: 24),
 
                 // Section 2: History (Matching Image 3)
-                const Text(
-                  'History',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.3,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'History',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    if (list.any((i) => i.status.toLowerCase() == 'cancelled'))
+                      TextButton.icon(
+                        onPressed: _deleteAllCancelledBookings,
+                        icon: const Icon(Icons.delete_sweep_outlined, size: 16, color: Color(0xFFEF4444)),
+                        label: const Text(
+                          'Clear Cancelled',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFEF4444)),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
 
@@ -661,32 +761,48 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFBBF7D0)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'View Details',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                            ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFBBF7D0)),
                           ),
-                          SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 14,
-                            color: AppColors.primary,
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'View Details',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 14,
+                                color: AppColors.primary,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (bk.status.toLowerCase() == 'cancelled') ...[
+                          const SizedBox(width: 6),
+                          IconButton(
+                            tooltip: 'Delete Record',
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            icon: const Icon(Icons.delete_outline_rounded, size: 19, color: Color(0xFF94A3B8)),
+                            onPressed: () => _deleteSingleBooking(bk.id),
                           ),
                         ],
-                      ),
+                      ],
                     ),
                   ],
                 ),

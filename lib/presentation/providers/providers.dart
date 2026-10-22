@@ -90,15 +90,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   void _invalidateUserData() {
     Future.microtask(() {
       ref.invalidate(cartProvider);
-      ref.invalidate(myBookingsProvider);
       ref.invalidate(addressListProvider);
-      ref.invalidate(notificationListProvider);
-      ref.invalidate(unreadNotificationCountProvider);
       ref.invalidate(paymentListProvider);
-      ref.invalidate(quotationListProvider);
-      ref.invalidate(myRatingsProvider);
-      ref.invalidate(rewardBalanceProvider);
-      ref.invalidate(rewardHistoryProvider);
     });
   }
 
@@ -448,6 +441,16 @@ final addressListProvider = FutureProvider((ref) async {
 
 final selectedAddressProvider = StateProvider<AddressModel?>((_) => null);
 
+final defaultAddressProvider = FutureProvider<AddressModel?>((ref) async {
+  final isGuest = ref.watch(authProvider).isGuest;
+  if (isGuest) return null;
+  final def = await ref.watch(addressRepoProvider).getDefault();
+  if (def != null && ref.read(selectedAddressProvider) == null) {
+    Future.microtask(() => ref.read(selectedAddressProvider.notifier).state = def);
+  }
+  return def;
+});
+
 final paymentListProvider = FutureProvider((ref) async {
   final isGuest = ref.watch(authProvider).isGuest;
   if (isGuest) return const <PaymentModel>[];
@@ -517,5 +520,24 @@ final rewardHistoryProvider = FutureProvider.autoDispose<List<RewardTransactionM
   final isGuest = ref.watch(authProvider).isGuest;
   if (isGuest) return const <RewardTransactionModel>[];
   return ref.watch(rewardRepoProvider).getHistory();
+});
+
+// ---------- booking completion & detail providers ----------
+final bookingCompletionStatusProvider =
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
+        (ref, String id) async {
+  return ref.watch(bookingRepoProvider).completionStatus(id);
+});
+
+final productBookingDetailProvider =
+    FutureProvider.autoDispose.family<ProductBookingModel, String>(
+        (ref, String id) async {
+  return ref.watch(supportRepoProvider).productBooking(id);
+});
+
+final quoteRequestDetailProvider =
+    FutureProvider.autoDispose.family<QuoteRequestModel, String>(
+        (ref, String id) async {
+  return ref.watch(supportRepoProvider).quoteRequest(id);
 });
 

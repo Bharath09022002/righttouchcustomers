@@ -103,6 +103,7 @@ class RemoteGateway {
       });
   Future<ApiResult<dynamic>> service(String id) => api.get(ApiEndpoints.serviceById(id));
   Future<ApiResult<dynamic>> products() => api.get(ApiEndpoints.allProducts);
+  Future<ApiResult<dynamic>> product(String id) => api.get(ApiEndpoints.productById(id));
 
   // ---------- Booking ----------
   Future<ApiResult<dynamic>> slots() => api.get(ApiEndpoints.bookingSlots);
@@ -110,9 +111,15 @@ class RemoteGateway {
       api.post(ApiEndpoints.bookingSchedule, body);
   Future<ApiResult<dynamic>> myBookings() => api.get(ApiEndpoints.customerBookings);
   Future<ApiResult<dynamic>> booking(String id) => api.get(ApiEndpoints.bookingById(id));
+  Future<ApiResult<dynamic>> bookingCompletionStatus(String id) =>
+      api.get(ApiEndpoints.bookingCompletionStatus(id));
   Future<ApiResult<dynamic>> cancelReasons() => api.get(ApiEndpoints.bookingReasons);
   Future<ApiResult<dynamic>> cancelBooking(String id, [String? reason]) =>
       api.put(ApiEndpoints.bookingCancel(id), {'reason': reason ?? 'Customer request'});
+  Future<ApiResult<dynamic>> deleteBooking(String id) =>
+      api.delete(ApiEndpoints.bookingDelete(id));
+  Future<ApiResult<dynamic>> deleteAllBookings() =>
+      api.delete(ApiEndpoints.bookingDeleteAll);
   Future<ApiResult<dynamic>> completedServices({double? lat, double? lng}) =>
       api.get(ApiEndpoints.completedServices, query: {
         'active': 'true',
@@ -202,6 +209,8 @@ class RemoteGateway {
       api.put(ApiEndpoints.addressDefault, body);
   Future<ApiResult<dynamic>> searchAddress(String q) =>
       api.get(ApiEndpoints.addressSearch, query: {'q': q, 'query': q});
+  Future<ApiResult<dynamic>> reverseGeocode(double lat, double lng) =>
+      api.get(ApiEndpoints.addressReverse, query: {'lat': lat, 'lng': lng});
 
   // ---------- Zones ----------
   Future<ApiResult<dynamic>> resolveZone(double lat, double lng) =>
@@ -226,10 +235,16 @@ class RemoteGateway {
   Future<ApiResult<dynamic>> createReport(Map<String, dynamic> body) =>
       api.post(ApiEndpoints.reports, body);
   Future<ApiResult<dynamic>> myReports() => api.get(ApiEndpoints.myReports);
+  Future<ApiResult<dynamic>> withdrawReport(String id, [String? reason]) =>
+      api.post(ApiEndpoints.reportWithdraw(id), {'reason': reason ?? 'Customer withdrawn'});
   Future<ApiResult<dynamic>> reportCategories() => api.get(ApiEndpoints.reportCategories);
   Future<ApiResult<dynamic>> quoteRequests() => api.get(ApiEndpoints.quoteRequests);
+  Future<ApiResult<dynamic>> quoteRequest(String id) =>
+      api.get(ApiEndpoints.quoteRequestDetail(id));
   Future<ApiResult<dynamic>> submitQuoteRequest(Map<String, dynamic> body) =>
       api.post(ApiEndpoints.quoteRequests, body);
+  Future<ApiResult<dynamic>> updateQuoteRequest(String id, Map<String, dynamic> body) =>
+      api.patch(ApiEndpoints.quoteRequestUpdate(id), body);
   Future<ApiResult<dynamic>> cancelQuoteRequest(String id) =>
       api.post(ApiEndpoints.quoteRequestCancel(id), {});
   Future<ApiResult<dynamic>> quotations() => api.get(ApiEndpoints.quotations);
@@ -242,16 +257,26 @@ class RemoteGateway {
       api.post(ApiEndpoints.quotationReject(id), {});
   Future<ApiResult<dynamic>> productBookings() =>
       api.get(ApiEndpoints.productBookings);
+  Future<ApiResult<dynamic>> productBooking(String id) =>
+      api.get(ApiEndpoints.productBookingDetail(id));
+  Future<ApiResult<dynamic>> updateProductBooking(String id, int quantity) =>
+      api.put(ApiEndpoints.productBookingUpdate(id), {'quantity': quantity});
   Future<ApiResult<dynamic>> cancelProductBooking(String id, [String? reason]) =>
       api.put(ApiEndpoints.productBookingCancel(id), {'reason': reason ?? 'Customer request'});
   Future<ApiResult<dynamic>> notifications() => api.get(ApiEndpoints.notifications);
   Future<ApiResult<dynamic>> unreadCount() => api.get(ApiEndpoints.notifUnreadCount);
   Future<ApiResult<dynamic>> markAllRead() => api.patch(ApiEndpoints.notifReadAll, {});
   Future<ApiResult<dynamic>> markRead(String id) => api.patch(ApiEndpoints.notifRead(id), {});
+  Future<ApiResult<dynamic>> notifOpened(String id) =>
+      api.post(ApiEndpoints.notifOpened(id), {});
+  Future<ApiResult<dynamic>> notifReceived(String id) =>
+      api.post(ApiEndpoints.notifReceived(id), {});
   Future<ApiResult<dynamic>> registerDevice(Map<String, dynamic> body) =>
       api.post(ApiEndpoints.deviceToken, body);
   Future<ApiResult<dynamic>> deleteDeviceToken([Map<String, dynamic>? body]) =>
       api.delete(ApiEndpoints.deviceToken, body);
+  Future<ApiResult<dynamic>> getPermissions([String? deviceId]) =>
+      api.get(ApiEndpoints.permissions, query: {if (deviceId != null) 'deviceId': deviceId});
   Future<ApiResult<dynamic>> updatePermissions(Map<String, dynamic> body) =>
       api.put(ApiEndpoints.permissions, body);
 
@@ -259,4 +284,7 @@ class RemoteGateway {
   Future<ApiResult<dynamic>> rewardBalance() => api.get(ApiEndpoints.rewardBalance);
   Future<ApiResult<dynamic>> rewardHistory({int page = 1, int limit = 20}) =>
       api.get(ApiEndpoints.rewardHistory, query: {'page': page, 'limit': limit});
+  Future<ApiResult<dynamic>> reconcileRewards() =>
+      api.post(ApiEndpoints.rewardsReconcile, {});
 }
+

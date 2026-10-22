@@ -13,7 +13,8 @@ import '../../widgets/review_bottom_sheet.dart';
 
 class ProductQuotationsScreen extends ConsumerStatefulWidget {
   final int initialTab;
-  const ProductQuotationsScreen({super.key, this.initialTab = 0});
+  final String? preselectedProductId;
+  const ProductQuotationsScreen({super.key, this.initialTab = 0, this.preselectedProductId});
 
   @override
   ConsumerState<ProductQuotationsScreen> createState() => _ProductQuotationsScreenState();
@@ -25,14 +26,16 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
 
   // Request form state
   final _requirementCtrl = TextEditingController();
+  String? _selectedProductId;
   String? _selectedAddressId;
-  String _contactMethod = 'phone';
+  String _contactMethod = 'whatsapp';
   bool _submitting = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this, initialIndex: widget.initialTab.clamp(0, 3));
+    _selectedProductId = widget.preselectedProductId;
   }
 
   @override
@@ -72,9 +75,22 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
         return;
       }
 
+      String? addressId = _selectedAddressId;
+      if (addressId == null || addressId.isEmpty) {
+        final addrs = ref.read(addressListProvider).valueOrNull ?? [];
+        if (addrs.isNotEmpty) {
+          addressId = addrs.firstWhere((a) => a.isDefault, orElse: () => addrs.first).id;
+        }
+      }
+      if (addressId == null || addressId.isEmpty) {
+        final defAddr = await ref.read(addressRepoProvider).getDefault();
+        addressId = defAddr?.id;
+      }
+
       await ref.read(supportRepoProvider).submitQuoteRequest(
             text,
-            addressId: _selectedAddressId,
+            productId: _selectedProductId,
+            addressId: addressId,
             contactMethod: _contactMethod,
           );
       ref.invalidate(quoteRequestListProvider);
@@ -359,6 +375,579 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
     );
   }
 
+  void _showQuoteRequestDetailSheet(QuoteRequestModel r) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return FutureBuilder<QuoteRequestModel>(
+          future: ref.read(supportRepoProvider).quoteRequest(r.id).catchError((_) => r),
+          initialData: r,
+          builder: (fbCtx, snapshot) {
+            final item = snapshot.data ?? r;
+            final isPending = item.status.toLowerCase() == 'pending';
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySoft,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.request_quote_outlined, color: AppColors.primary, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Quote Request Details',
+                                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Status: ${item.status.toUpperCase()}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: isPending ? const Color(0xFFD97706) : AppColors.primaryDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Requirement', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                          const SizedBox(height: 4),
+                          Text(item.requirement, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                          if (item.quantity != null) ...[
+                            const SizedBox(height: 12),
+                            const Text('Quantity', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                            const SizedBox(height: 2),
+                            Text('${item.quantity} units', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                          ],
+                          if (item.additionalNotes != null && item.additionalNotes!.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            const Text('Additional Notes', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                            const SizedBox(height: 2),
+                            Text(item.additionalNotes!, style: const TextStyle(fontSize: 13, color: Color(0xFF334155))),
+                          ],
+                          if (item.preferredContactMethod != null) ...[
+                            const SizedBox(height: 12),
+                            const Text('Preferred Contact', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                            const SizedBox(height: 2),
+                            Text(item.preferredContactMethod!, style: const TextStyle(fontSize: 13, color: Color(0xFF334155))),
+                          ],
+                          if (item.addressLine != null && item.addressLine!.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            const Text('Location', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                            const SizedBox(height: 2),
+                            Text(item.addressLine!, style: const TextStyle(fontSize: 13, color: Color(0xFF334155))),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (isPending) ...[
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _showEditQuoteRequestModal(item);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.edit_outlined, size: 16),
+                              label: const Text('Edit Request', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _cancelRequest(item);
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFDC2626),
+                                side: const BorderSide(color: Color(0xFFFCA5A5)),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Cancel Request', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditQuoteRequestModal(QuoteRequestModel r) {
+    final reqCtrl = TextEditingController(text: r.requirement);
+    final notesCtrl = TextEditingController(text: r.additionalNotes ?? '');
+    int qty = r.quantity ?? 1;
+    bool saving = false;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (mCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(mCtx).viewInsets.bottom + 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Edit Quote Request',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Requirement Description', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: reqCtrl,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      hintText: 'Describe required model or specification...',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Quantity', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, color: Color(0xFF64748B)),
+                            onPressed: qty > 1 ? () => setModalState(() => qty--) : null,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text('$qty', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                            onPressed: qty < 99 ? () => setModalState(() => qty++) : null,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Text('Additional Notes', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: notesCtrl,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      hintText: 'Any special installation or delivery notes...',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: saving ? null : () async {
+                        if (reqCtrl.text.trim().isEmpty) return;
+                        setModalState(() => saving = true);
+                        try {
+                          await ref.read(supportRepoProvider).updateQuoteRequest(r.id, {
+                            'requirementDescription': reqCtrl.text.trim(),
+                            'quantity': qty,
+                            'additionalNotes': notesCtrl.text.trim(),
+                          });
+                          ref.invalidate(quoteRequestListProvider);
+                          if (mCtx.mounted) Navigator.pop(mCtx);
+                          if (!mounted) return;
+                          showSuccess(context, title: 'Request Updated', message: 'Your quote request has been updated.');
+                        } catch (e) {
+                          setModalState(() => saving = false);
+                          if (!mounted) return;
+                          showError(context, title: 'Update Failed', message: mapException(e).userMessage);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: saving
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showProductBookingDetailSheet(ProductBookingModel b) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return FutureBuilder<ProductBookingModel>(
+          future: ref.read(supportRepoProvider).productBooking(b.id).catchError((_) => b),
+          initialData: b,
+          builder: (fbCtx, snapshot) {
+            final item = snapshot.data ?? b;
+            final isCancelled = item.status.toLowerCase() == 'cancelled';
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySoft,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.inventory_2_outlined, color: AppColors.primary, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.productName ?? 'Custom Equipment Order',
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF0F172A)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Status: ${item.status.toUpperCase()}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: isCancelled ? const Color(0xFFDC2626) : AppColors.primaryDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Order ID', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                              Text(item.id.length > 10 ? '${item.id.substring(0, 10)}...' : item.id, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                            ],
+                          ),
+                          const Divider(height: 18),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Quantity', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                              Text('${item.quantity ?? 1} units', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF0F172A))),
+                            ],
+                          ),
+                          if (item.amount != null) ...[
+                            const Divider(height: 18),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Total Amount', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                                Text(inr(item.amount), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.primary)),
+                              ],
+                            ),
+                          ],
+                          if (item.paymentStatus != null) ...[
+                            const Divider(height: 18),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Payment Status', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                                Text(item.paymentStatus!.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF334155))),
+                              ],
+                            ),
+                          ],
+                          if (item.createdAt != null) ...[
+                            const Divider(height: 18),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Ordered On', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                                Text(fmtDate(item.createdAt), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (!isCancelled) ...[
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _showUpdateBookingQuantityModal(item);
+                              },
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppColors.primary),
+                                foregroundColor: AppColors.primary,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.edit_outlined, size: 16),
+                              label: const Text('Update Qty', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                Navigator.pop(ctx);
+                                try {
+                                  await ref.read(supportRepoProvider).cancelProductBooking(item.id);
+                                  ref.invalidate(productBookingsProvider);
+                                  if (!mounted) return;
+                                  showSuccess(context, title: 'Order Cancelled', message: 'Product order cancelled successfully.');
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  showError(context, title: 'Cancellation Failed', message: mapException(e).userMessage);
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFDC2626),
+                                side: const BorderSide(color: Color(0xFFFCA5A5)),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Cancel Order', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showUpdateBookingQuantityModal(ProductBookingModel b) {
+    int qty = b.quantity ?? 1;
+    bool saving = false;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (mCtx, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Update Quantity - ${b.productName ?? 'Product'}',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A)),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton.filled(
+                          onPressed: qty > 1 ? () => setModalState(() => qty--) : null,
+                          icon: const Icon(Icons.remove, size: 20),
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            foregroundColor: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Text(
+                          '$qty',
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.primary),
+                        ),
+                        const SizedBox(width: 24),
+                        IconButton.filled(
+                          onPressed: qty < 99 ? () => setModalState(() => qty++) : null,
+                          icon: const Icon(Icons.add, size: 20),
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: saving ? null : () async {
+                          setModalState(() => saving = true);
+                          try {
+                            await ref.read(supportRepoProvider).updateProductBookingQuantity(b.id, qty);
+                            ref.invalidate(productBookingsProvider);
+                            if (mCtx.mounted) Navigator.pop(mCtx);
+                            if (!mounted) return;
+                            showSuccess(context, title: 'Quantity Updated', message: 'Product order quantity updated to $qty.');
+                          } catch (e) {
+                            setModalState(() => saving = false);
+                            if (!mounted) return;
+                            showError(context, title: 'Update Failed', message: mapException(e).userMessage);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: saving
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text('Confirm Update', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -446,6 +1035,54 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
             ),
           ),
           const SizedBox(height: 18),
+
+          // Target Product Selection (Optional)
+          Consumer(
+            builder: (context, ref, _) {
+              final productsAsync = ref.watch(productListProvider);
+              return productsAsync.when(
+                data: (products) {
+                  if (products.isEmpty) return const SizedBox();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Target Product (Optional)',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF0F172A)),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String?>(
+                        initialValue: _selectedProductId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          hintText: 'Select a product or leave for custom',
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                        ),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('Custom / Not specific', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+                          ),
+                          ...products.map((p) => DropdownMenuItem<String?>(
+                                value: p.id,
+                                child: Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                              )),
+                        ],
+                        onChanged: (val) => setState(() => _selectedProductId = val),
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+                  );
+                },
+                loading: () => const SizedBox(),
+                error: (_, __) => const SizedBox(),
+              );
+            },
+          ),
 
           // Requirement Description Header + Quick Selection Chips
           Row(
@@ -783,18 +1420,45 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                         style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
                       ),
                     ],
-                    if (isPending) ...[
-                      const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: () => _cancelRequest(r),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF0F172A),
-                          side: const BorderSide(color: Color(0xFFCBD5E1)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => _showQuoteRequestDetailSheet(r),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF0F172A),
+                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          ),
+                          child: const Text('View Details', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                         ),
-                        child: const Text('Cancel Request', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                      ),
-                    ],
+                        if (isPending) ...[
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: () => _showEditQuoteRequestModal(r),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: const BorderSide(color: AppColors.primary),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            ),
+                            child: const Text('Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: () => _cancelRequest(r),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFDC2626),
+                              side: const BorderSide(color: Color(0xFFFCA5A5)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            ),
+                            child: const Text('Cancel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               );
@@ -859,16 +1523,38 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                       ],
                     ),
                     const SizedBox(height: 10),
+                    if (b.amount != null)
+                      Text(
+                        inr(b.amount),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                      ),
+                    const SizedBox(height: 12),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        if (b.amount != null)
-                          Text(
-                            inr(b.amount),
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                          )
-                        else
-                          const SizedBox.shrink(),
+                        OutlinedButton(
+                          onPressed: () => _showProductBookingDetailSheet(b),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF0F172A),
+                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          ),
+                          child: const Text('View Order', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        ),
+                        if (b.status.toLowerCase() != 'cancelled') ...[
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: () => _showUpdateBookingQuantityModal(b),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: const BorderSide(color: AppColors.primary),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            child: const Text('Update Qty', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                        const Spacer(),
                         Builder(
                           builder: (context) {
                             final myRatings = ref.watch(myRatingsProvider).valueOrNull ?? [];

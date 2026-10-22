@@ -282,13 +282,14 @@ class ProductModel {
   factory ProductModel.fromJson(dynamic j) {
     final m = asMap(j);
     final imgs = <String>[];
-    for (final k in ['images', 'photos', 'productImages']) {
+    for (final k in ['images', 'photos', 'productImages', 'gallery']) {
       final v = m[k];
       if (v is List) imgs.addAll(v.map((e) => e.toString()));
     }
     final img = (m['image'] ??
             m['thumbnail'] ??
             m['imageUrl'] ??
+            m['productImage'] ??
             (imgs.isNotEmpty ? imgs.first : null))
         ?.toString();
     final cat = m['categoryId'] ?? m['category'];
@@ -296,34 +297,47 @@ class ProductModel {
         ? str(cat['_id'] ?? cat['id'])
         : str(m['categoryId'] ?? cat);
     final catName = cat is Map
-        ? str(cat['category'] ?? cat['name'])
-        : str(m['categoryName']);
+        ? str(cat['category'] ?? cat['name'] ?? cat['title'] ?? cat['categoryName'])
+        : str(m['categoryName'] ?? (cat is String ? cat : null));
 
     final p = m['price'] is num
         ? m['price']
-        : num.tryParse(str(m['price']));
+        : (m['finalPrice'] is num
+            ? m['finalPrice']
+            : (m['rate'] is num ? m['rate'] : num.tryParse(str(m['price']))));
+
+    final mrpVal = m['mrp'] is num
+        ? m['mrp']
+        : (m['originalPrice'] is num
+            ? m['originalPrice']
+            : (m['marketPrice'] is num ? m['marketPrice'] : (p != null ? (p * 1.2).round() : null)));
+
+    final stock = m['stock'];
+    final inStockVal = m['inStock'] != false &&
+        m['isAvailable'] != false &&
+        (stock == null || (stock is num ? stock > 0 : true));
 
     return ProductModel(
       id: str(m['_id'] ?? m['id'] ?? m['productId']),
       name: str(m['productName'] ?? m['name'] ?? m['title'] ?? 'Product'),
       description:
-          m['description']?.toString() ?? m['specifications']?.toString(),
+          m['description']?.toString() ?? m['specifications']?.toString() ?? m['details']?.toString(),
       price: p,
-      mrp: m['mrp'] is num
-          ? m['mrp']
-          : (m['originalPrice'] is num ? m['originalPrice'] : (p != null ? (p * 1.2).round() : null)),
-      rating: numD(m['rating'] ?? m['avgRating'], 4.8),
+      mrp: mrpVal,
+      rating: numD(m['rating'] ?? m['avgRating'] ?? m['ratings'], 4.8),
       ratingCount: (m['ratingCount'] is num)
           ? (m['ratingCount'] as num).toInt()
-          : 85,
+          : ((m['totalRatings'] is num)
+              ? (m['totalRatings'] as num).toInt()
+              : 85),
       image: img,
       images: imgs,
       categoryId: catId.isNotEmpty ? catId : null,
       categoryName: catName.isNotEmpty ? catName : null,
-      brand: (m['brand'] ?? m['manufacturer'])?.toString() ?? 'RightTouch Pro',
-      warranty: m['warranty']?.toString() ?? '1 Year Brand Warranty',
-      inStock: m['inStock'] != false && m['isAvailable'] != false,
-      quoteRequired: m['quoteRequired'] == true || p == null,
+      brand: (m['brand'] ?? m['brandName'] ?? m['manufacturer'])?.toString() ?? 'RightTouch Pro',
+      warranty: m['warranty']?.toString() ?? m['warrantyPeriod']?.toString() ?? '1 Year Brand Warranty',
+      inStock: inStockVal,
+      quoteRequired: m['quoteRequired'] == true || m['isQuoteOnly'] == true || p == null,
     );
   }
 }
@@ -519,7 +533,7 @@ class AddressModel {
     final m = asMap(j);
     return AddressModel(
       id: str(m['_id'] ?? m['id'] ?? m['addressId']),
-      type: str(m['addressType'] ?? m['type'], 'Home'),
+      type: str(m['label'] ?? m['addressType'] ?? m['type'], 'Home'),
       line: str(m['addressLine'] ?? m['line'] ?? m['address']),
       city: str(m['city']),
       state: str(m['state']),
@@ -596,27 +610,42 @@ class QuoteRequestModel {
   final String id;
   final String requirement;
   final String status;
+  final String? productId;
+  final String? requestNumber;
   final String? preferredContactMethod;
   final String? addressLine;
+  final int? quantity;
+  final String? additionalNotes;
   final dynamic createdAt;
 
   QuoteRequestModel({
     required this.id,
     required this.requirement,
     required this.status,
+    this.productId,
+    this.requestNumber,
     this.preferredContactMethod,
     this.addressLine,
+    this.quantity,
+    this.additionalNotes,
     this.createdAt,
   });
 
   factory QuoteRequestModel.fromJson(dynamic j) {
     final m = asMap(j);
+    final pId = m['productId'] is Map
+        ? str(m['productId']['_id'] ?? m['productId']['id'])
+        : (m['productId'] != null ? str(m['productId']) : null);
     return QuoteRequestModel(
       id: str(m['_id'] ?? m['id']),
       requirement: str(m['requirementDescription'] ?? m['requirement'] ?? m['description'] ?? 'Product Quote Request'),
       status: str(m['status'] ?? 'pending'),
+      productId: pId,
+      requestNumber: m['requestNumber']?.toString(),
       preferredContactMethod: m['preferredContactMethod']?.toString(),
       addressLine: m['address'] is Map ? str(m['address']['addressLine']) : m['addressId']?.toString(),
+      quantity: m['quantity'] is num ? (m['quantity'] as num).toInt() : null,
+      additionalNotes: m['additionalNotes']?.toString(),
       createdAt: m['createdAt'],
     );
   }
@@ -628,6 +657,8 @@ class ProductBookingModel {
   final num? amount;
   final String? quotationId;
   final String? productName;
+  final int? quantity;
+  final String? paymentStatus;
   final dynamic createdAt;
 
   ProductBookingModel({
@@ -636,6 +667,8 @@ class ProductBookingModel {
     this.amount,
     this.quotationId,
     this.productName,
+    this.quantity,
+    this.paymentStatus,
     this.createdAt,
   });
 
@@ -647,6 +680,8 @@ class ProductBookingModel {
       amount: m['finalAmount'] is num ? m['finalAmount'] : (m['amount'] is num ? m['amount'] : null),
       quotationId: str(m['quotationId'] ?? m['quotation']),
       productName: (m['productName'] ?? m['title'])?.toString(),
+      quantity: m['quantity'] is num ? (m['quantity'] as num).toInt() : (m['qty'] is num ? (m['qty'] as num).toInt() : null),
+      paymentStatus: m['paymentStatus']?.toString(),
       createdAt: m['createdAt'],
     );
   }

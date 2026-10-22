@@ -79,34 +79,8 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     });
   }
 
-  void _handleProductAction(ProductModel p) async {
-    final qty = _quantities[p.id] ?? 1;
-    if (p.quoteRequired) {
-      _showQuoteRequestModal(p);
-    } else {
-      try {
-        await ref.read(cartRepoProvider).add(p.id, 'product', qty);
-        ref.invalidate(cartProvider);
-        if (mounted) {
-          showSuccess(
-            context,
-            title: 'Added to cart',
-            message: '$qty x ${p.name} added to cart.',
-            actionLabel: 'View Cart',
-            onAction: () => context.push('/cart'),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          final appErr = mapException(e);
-          showError(
-            context,
-            title: 'Could not add to cart',
-            message: appErr.userMessage,
-          );
-        }
-      }
-    }
+  void _addQuote(ProductModel p) {
+    _showQuoteRequestModal(p);
   }
 
   void _showSortModal() {
@@ -256,8 +230,23 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     );
   }
 
-  void _showQuoteRequestModal(ProductModel p) {
+  void _showQuoteRequestModal(ProductModel p) async {
     final noteCtrl = TextEditingController();
+    int quoteQty = _quantities[p.id] ?? 1;
+    final List<String> presetChips = [
+      'Need installation assistance',
+      'Bulk order quotation',
+      'Site inspection request',
+      'Subsidy scheme details',
+      'Commercial warranty inquiry',
+    ];
+    final Set<String> selectedChips = {};
+    String contactMethod = 'whatsapp';
+
+    AddressModel? defaultAddr = ref.read(selectedAddressProvider);
+    defaultAddr ??= await ref.read(addressRepoProvider).getDefault();
+    if (!mounted) return;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -266,87 +255,403 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Request Quotation: ${p.name}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F172A),
-                ),
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+                left: 20,
+                right: 20,
+                top: 20,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Our technical engineer will prepare a customized proposal with installation and subsidy details.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: noteCtrl,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Add requirements (e.g. 5kW rooftop, 3-phase connection...)',
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final note = noteCtrl.text.trim();
-                    Navigator.pop(ctx);
-                    try {
-                      await ref.read(supportRepoProvider).submitQuoteRequest(
-                        note.isNotEmpty ? note : 'Quote request for ${p.name}',
-                      );
-                      ref.invalidate(quoteRequestListProvider);
-                      if (!mounted) return;
-                      showSuccess(
-                        context,
-                        title: 'Quote Requested',
-                        message: 'Quotation request submitted! Our engineer will prepare a proposal.',
-                        actionLabel: 'View Quotations',
-                        onAction: () => context.push('/quotations'),
-                      );
-                    } catch (e) {
-                      if (!mounted) return;
-                      final appErr = mapException(e);
-                      showError(
-                        context,
-                        title: 'Quote Request Failed',
-                        message: appErr.userMessage,
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF16A34A),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.request_quote_rounded, color: Color(0xFF16A34A), size: 22),
+                            SizedBox(width: 8),
+                            Text(
+                              'Request Quotation',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
                     ),
-                  ),
-                  child: const Text('Submit Request', style: TextStyle(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 10),
+
+                    // Product Preview Box
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              width: 54,
+                              height: 54,
+                              color: Colors.white,
+                              padding: const EdgeInsets.all(4),
+                              child: AppImage(
+                                url: p.image,
+                                fit: BoxFit.contain,
+                                errorWidget: _fallbackProductImage(p),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p.name,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  p.price != null
+                                      ? 'Est: ₹${p.price}'
+                                      : 'Custom Engineer Proposal',
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF16A34A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Delivery / Installation Address Card
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFBBF7D0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on_rounded, color: Color(0xFF16A34A), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      defaultAddr != null ? '${defaultAddr.type} Address' : 'Site Address',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF166534),
+                                      ),
+                                    ),
+                                    if (defaultAddr != null) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF16A34A),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Text(
+                                          'DEFAULT',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  defaultAddr != null
+                                      ? (defaultAddr.line.isNotEmpty ? '${defaultAddr.line}, ${defaultAddr.city}' : (defaultAddr.city.isNotEmpty ? defaultAddr.city : defaultAddr.type))
+                                      : 'Using saved account location for quote survey',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    color: Color(0xFF15803D),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // Quantity Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Estimated Quantity',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                        Container(
+                          height: 34,
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              InkWell(
+                                onTap: quoteQty > 1
+                                    ? () => setModalState(() => quoteQty--)
+                                    : null,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Icons.remove,
+                                    size: 16,
+                                    color: quoteQty > 1 ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                child: Text(
+                                  '$quoteQty',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () => setModalState(() => quoteQty++),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(4),
+                                  child: Icon(Icons.add, size: 16, color: Color(0xFF0F172A)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // Quick Chips
+                    const Text(
+                      'Requirement Specifications',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: presetChips.map((chip) {
+                        final isSelected = selectedChips.contains(chip);
+                        return FilterChip(
+                          label: Text(
+                            chip,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF475569),
+                            ),
+                          ),
+                          selected: isSelected,
+                          onSelected: (val) {
+                            setModalState(() {
+                              if (val) {
+                                selectedChips.add(chip);
+                              } else {
+                                selectedChips.remove(chip);
+                              }
+                            });
+                          },
+                          backgroundColor: const Color(0xFFF8FAFC),
+                          selectedColor: const Color(0xFFECFDF5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color: isSelected ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          showCheckmark: false,
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: noteCtrl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Add specific details (e.g. 5kW rooftop, 3-phase connection, site location...)',
+                        hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: Color(0xFF16A34A), width: 1.5),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Contact Method Selection
+                    Row(
+                      children: [
+                        const Text(
+                          'Contact via:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ChoiceChip(
+                          label: const Text('WhatsApp', style: TextStyle(fontSize: 11.5)),
+                          selected: contactMethod == 'whatsapp',
+                          selectedColor: const Color(0xFFDCFCE7),
+                          onSelected: (_) => setModalState(() => contactMethod = 'whatsapp'),
+                        ),
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          label: const Text('Phone Call', style: TextStyle(fontSize: 11.5)),
+                          selected: contactMethod == 'phone',
+                          selectedColor: const Color(0xFFDCFCE7),
+                          onSelected: (_) => setModalState(() => contactMethod = 'phone'),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final customNote = noteCtrl.text.trim();
+                          final parts = <String>[];
+                          parts.add('Quote Request for $quoteQty x ${p.name}');
+                          if (selectedChips.isNotEmpty) {
+                            parts.add('Tags: ${selectedChips.join(', ')}');
+                          }
+                          if (customNote.isNotEmpty) {
+                            parts.add('Notes: $customNote');
+                          }
+                          final fullDescription = parts.join('\n');
+
+                          Navigator.pop(ctx);
+                          try {
+                            await ref.read(supportRepoProvider).submitQuoteRequest(
+                              fullDescription,
+                              productId: p.id,
+                              quantity: quoteQty,
+                              addressId: defaultAddr?.id,
+                              locationType: defaultAddr?.id != null ? 'saved' : 'current',
+                              additionalNotes: customNote,
+                              contactMethod: contactMethod,
+                            );
+                            ref.invalidate(quoteRequestListProvider);
+                            if (!mounted) return;
+                            showSuccess(
+                              context,
+                              title: 'Quote Requested',
+                              message: 'Quotation request for $quoteQty x ${p.name} submitted! Our engineer will prepare a customized proposal.',
+                              actionLabel: 'View My Requests',
+                              onAction: () => context.push('/quotations?tab=2'),
+                            );
+                          } catch (e) {
+                            if (!mounted) return;
+                            final appErr = mapException(e);
+                            showError(
+                              context,
+                              title: 'Quote Request Failed',
+                              message: appErr.userMessage,
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.send_rounded, size: 16),
+                        label: const Text(
+                          'Submit Quote Request',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF16A34A),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     ).whenComplete(() => noteCtrl.dispose());
@@ -365,7 +670,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const RightTouchTopAppBar(title: 'Products', showSearch: false),
+      appBar: const RightTouchTopAppBar(title: 'Quotations', showSearch: false),
       body: RefreshIndicator(
         color: const Color(0xFF16A34A),
         onRefresh: () async {
@@ -454,7 +759,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Products',
+                      'Quotations',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
@@ -505,7 +810,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
                   if (_isGridView) {
                     final textScaler = MediaQuery.of(context).textScaler;
-                    final cardExtent = textScaler.scale(385.0);
+                    final cardExtent = textScaler.scale(390.0);
 
                     return GridView.builder(
                       shrinkWrap: true,
@@ -1464,15 +1769,15 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                     ],
                   ),
 
-                  // Bottom Action Row: [ - 1 + ] & [ Add to Cart ]
+                  // Action button: Quantity Stepper + Add Quote
                   Row(
                     children: [
                       // Quantity Stepper
                       Container(
-                        height: 30,
+                        height: 28,
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                           ),
@@ -1510,34 +1815,34 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                       ),
                       const SizedBox(width: 6),
 
-                      // Add to Cart Button
+                      // Add Quote Button
                       Expanded(
                         child: SizedBox(
-                          height: 30,
+                          height: 28,
                           child: ElevatedButton(
-                            onPressed: () => _handleProductAction(p),
+                            onPressed: () => _addQuote(p),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF16A34A),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: FittedBox(
+                            child: const FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 6),
+                                padding: EdgeInsets.symmetric(horizontal: 4),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.shopping_cart_outlined, size: 13),
-                                    const SizedBox(width: 4),
+                                    Icon(Icons.request_quote_outlined, size: 12),
+                                    SizedBox(width: 3),
                                     Text(
-                                      p.quoteRequired ? 'Quote' : 'Add to Cart',
-                                      style: const TextStyle(
-                                        fontSize: 10.5,
+                                      'Add Quote',
+                                      style: TextStyle(
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w800,
                                       ),
                                     ),
@@ -1652,7 +1957,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 _buildPriceRow(p),
                 const SizedBox(height: 8),
 
-                // Stepper + Add to Cart
+                // Stepper + Add Quote
                 Row(
                   children: [
                     Container(
@@ -1690,21 +1995,24 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    // Add Quote Button
                     Expanded(
                       child: SizedBox(
                         height: 32,
-                        child: ElevatedButton(
-                          onPressed: () => _handleProductAction(p),
+                        child: ElevatedButton.icon(
+                          onPressed: () => _addQuote(p),
+                          icon: const Icon(Icons.request_quote_outlined, size: 14),
+                          label: const Text(
+                            'Add Quote',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                          ),
-                          child: Text(
-                            p.quoteRequired ? 'Request Quote' : 'Add to Cart',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
                           ),
                         ),
                       ),

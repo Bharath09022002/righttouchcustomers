@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/ui.dart';
+import '../../../core/ui/app_feedback.dart';
+import '../../../data/models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/guest_login_placeholder.dart';
 
@@ -42,6 +43,27 @@ class RewardsScreen extends ConsumerWidget {
         ),
         centerTitle: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync_rounded),
+            tooltip: 'Reconcile Balance',
+            onPressed: () async {
+              try {
+                await ref.read(rewardRepoProvider).reconcile();
+                ref.invalidate(rewardBalanceProvider);
+                ref.invalidate(rewardHistoryProvider);
+                if (context.mounted) {
+                  showSuccess(
+                    context,
+                    title: 'Balance Reconciled',
+                    message: 'Your reward balance and transactions have been synced.',
+                  );
+                }
+              } catch (_) {
+                ref.invalidate(rewardBalanceProvider);
+                ref.invalidate(rewardHistoryProvider);
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh Balance',

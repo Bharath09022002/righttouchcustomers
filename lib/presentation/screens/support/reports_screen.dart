@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/ui/app_feedback.dart';
+import '../../../data/models/models.dart';
 import '../../providers/providers.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -72,6 +73,75 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
       }
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _withdrawComplaint(ReportModel r) async {
+    final reasonCtrl = TextEditingController(text: 'Issue resolved or filed by mistake');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Withdraw Complaint', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Are you sure you want to withdraw this complaint? You can provide an optional note below:',
+              style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonCtrl,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                hintText: 'Reason for withdrawal...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                contentPadding: const EdgeInsets.all(10),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep Open', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Withdraw'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(supportRepoProvider).withdrawReport(r.id, reasonCtrl.text.trim());
+        ref.invalidate(myReportsProvider);
+        if (mounted) {
+          showSuccess(
+            context,
+            title: 'Complaint Withdrawn',
+            message: 'Your complaint has been successfully withdrawn.',
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          showError(
+            context,
+            title: 'Withdrawal Failed',
+            message: mapException(e).userMessage,
+          );
+        }
+      }
     }
   }
 
@@ -294,6 +364,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                       r.complaint,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
                     ),
+                    if (r.status.toLowerCase() != 'withdrawn' &&
+                        r.status.toLowerCase() != 'resolved' &&
+                        r.status.toLowerCase() != 'closed') ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () => _withdrawComplaint(r),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFDC2626),
+                              side: const BorderSide(color: Color(0xFFFCA5A5)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            ),
+                            icon: const Icon(Icons.remove_circle_outline, size: 14),
+                            label: const Text('Withdraw Complaint', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               );

@@ -56,7 +56,9 @@ class NotificationsScreen extends ConsumerWidget {
                   isThreeLine: true,
                   onTap: () async {
                     await ref.read(gatewayProvider).markRead(x.id);
+                    ref.read(supportRepoProvider).markNotificationOpened(x.id);
                     ref.invalidate(notificationListProvider);
+                    ref.invalidate(unreadNotificationCountProvider);
                   },
                 ),
               );

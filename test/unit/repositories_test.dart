@@ -158,5 +158,60 @@ void main() {
       expect(addresses.first.city, 'Coimbatore');
       expect(addresses.first.isDefault, isTrue);
     });
+
+    test('getDefault extracts default AddressModel correctly', () async {
+      when(() => mockGateway.defaultAddress()).thenAnswer((_) async => const ApiOk({
+            'success': true,
+            'message': 'Default address fetched successfully',
+            'result': {
+              '_id': '6ad77ecff2ac4b60fb100091',
+              'label': 'home',
+              'name': 'bharath p',
+              'phone': '9894971618',
+            }
+          }));
+
+      final repo = AddressRepository(mockGateway);
+      final addr = await repo.getDefault();
+
+      expect(addr, isNotNull);
+      expect(addr!.id, '6ad77ecff2ac4b60fb100091');
+      expect(addr.type.toLowerCase(), 'home');
+    });
+  });
+
+  group('SupportRepository Unit Tests', () {
+    test('submitQuoteRequest sends productId, quantity, addressId, and preferredContactMethod', () async {
+      when(() => mockGateway.submitQuoteRequest(any())).thenAnswer((_) async => const ApiOk({
+            'success': true,
+            'message': 'Quote request created',
+            'result': {
+              'requestNumber': 'QREQ-2010210424',
+              'customerId': 'cust_1',
+              'productId': '6ad2eb42af3c8c7f9d56bfc6',
+            }
+          }));
+
+      final repo = SupportRepository(mockGateway);
+      await repo.submitQuoteRequest(
+        '3BHK full wiring',
+        productId: '6ad2eb42af3c8c7f9d56bfc6',
+        quantity: 1,
+        addressId: '6ad77ecff2ac4b60fb100091',
+        locationType: 'saved',
+        additionalNotes: '',
+        contactMethod: 'whatsapp',
+      );
+
+      final captured = verify(() => mockGateway.submitQuoteRequest(captureAny())).captured;
+      expect(captured.length, 1);
+      final body = captured.first as Map<String, dynamic>;
+      expect(body['productId'], '6ad2eb42af3c8c7f9d56bfc6');
+      expect(body['quantity'], 1);
+      expect(body['addressId'], '6ad77ecff2ac4b60fb100091');
+      expect(body['locationType'], 'saved');
+      expect(body['requirementDescription'], '3BHK full wiring');
+      expect(body['preferredContactMethod'], 'whatsapp');
+    });
   });
 }

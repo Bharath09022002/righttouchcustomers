@@ -94,6 +94,61 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }
   }
 
+  Future<void> _deleteBooking() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Delete Booking?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        content: const Text(
+          'This will permanently remove this cancelled booking from your account history.',
+          style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _busy = true);
+      try {
+        await ref.read(bookingRepoProvider).delete(widget.id);
+        ref.invalidate(myBookingsProvider);
+        if (mounted) {
+          showSuccess(
+            context,
+            title: 'Booking Deleted',
+            message: 'Booking history record removed.',
+          );
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            context.go('/bookings');
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          showError(context, title: 'Delete Failed', message: mapException(e).userMessage);
+        }
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+    }
+  }
+
   Future<void> _handleRateService(BookingModel b) async {
     // 1. Completion Gate
     if (b.status.toLowerCase() != 'completed') {
@@ -892,6 +947,105 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ),
                     ),
 
+                    // Completion Status Card
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final statusAsync = ref.watch(bookingCompletionStatusProvider(widget.id));
+                        return statusAsync.maybeWhen(
+                          data: (data) {
+                            if (data.isEmpty) return const SizedBox.shrink();
+                            final isVerified = data['verified'] == true ||
+                                data['isCompleted'] == true ||
+                                data['completed'] == true;
+                            final completionTime = data['completedAt'] ?? data['time'];
+                            final notes = data['notes'] ?? data['message'];
+                            return Container(
+                              margin: const EdgeInsets.only(top: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                    color: isVerified
+                                        ? const Color(0xFFBBF7D0)
+                                        : const Color(0xFFE2E8F0)),
+                              ),
+                              padding: const EdgeInsets.all(18),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        isVerified
+                                            ? Icons.verified_rounded
+                                            : Icons.pending_actions_rounded,
+                                        color: isVerified
+                                            ? const Color(0xFF16A34A)
+                                            : const Color(0xFFD97706),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Service Verification Status',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                          color: isVerified
+                                              ? const Color(0xFF16A34A)
+                                              : const Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: isVerified
+                                              ? const Color(0xFFDCFCE7)
+                                              : const Color(0xFFFEF3C7),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          isVerified ? 'VERIFIED' : 'PENDING',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w900,
+                                            color: isVerified
+                                                ? const Color(0xFF15803D)
+                                                : const Color(0xFFB45309),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (completionTime != null) ...[
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'Verified on: ${fmtDate(completionTime)}',
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Color(0xFF64748B)),
+                                    ),
+                                  ],
+                                  if (notes != null &&
+                                      notes.toString().isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      notes.toString(),
+                                      style: const TextStyle(
+                                          fontSize: 12.5,
+                                          color: Color(0xFF334155)),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            );
+                          },
+                          orElse: () => const SizedBox.shrink(),
+                        );
+                      },
+                    ),
+
                     if (isPending) ...[
                       const SizedBox(height: 14),
                       Center(
@@ -900,6 +1054,22 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                           icon: const Icon(Icons.cancel_outlined, color: Color(0xFFEF4444), size: 18),
                           label: const Text(
                             'Cancel Booking',
+                            style: TextStyle(
+                              color: Color(0xFFEF4444),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ] else if (b.status.toLowerCase() == 'cancelled') ...[
+                      const SizedBox(height: 14),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: _busy ? null : _deleteBooking,
+                          icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
+                          label: const Text(
+                            'Delete Booking Record',
                             style: TextStyle(
                               color: Color(0xFFEF4444),
                               fontWeight: FontWeight.w700,

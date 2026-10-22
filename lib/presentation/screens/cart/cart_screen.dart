@@ -264,7 +264,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               title: 'Your cart is empty',
               subtitle: 'Explore services and add them to book together.',
               cta: 'Browse services',
-              onCta: () => context.go('/'),
+              onCta: () => context.go('/services'),
             );
           }
 

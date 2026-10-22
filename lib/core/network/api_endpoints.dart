@@ -140,5 +140,12 @@ class ApiEndpoints {
   static String productBookingDetail(String id) => '/api/user/product-bookings/$id';
   static String productBookingCancel(String id) => '/api/user/productBookingCancel/$id';
   static String productBookingUpdate(String id) => '/api/user/productBookingUpdate/$id';
+  static String quoteRequestDetail(String id) => '/api/user/product-quote-requests/$id';
+  static String quoteRequestUpdate(String id) => '/api/user/product-quote-requests/$id';
+  static String bookingCompletionStatus(String id) => '/api/user/booking/$id/completion-status';
+  static String bookingDelete(String id) => '/api/user/booking/$id';
   static const bookingDeleteAll = '/api/user/booking/deleteAll';
+  static String notifOpened(String id) => '/api/user/notifications/$id/opened';
+  static String notifReceived(String id) => '/api/user/notifications/$id/received';
+  static const rewardsReconcile = '/api/user/rewards/reconcile';
 }

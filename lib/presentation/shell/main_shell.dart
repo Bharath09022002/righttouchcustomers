@@ -76,7 +76,7 @@ class MainShell extends ConsumerWidget {
             children: [
               _tab(context, 0, i, Icons.home_outlined, Icons.home_rounded, 'Home'),
               _tab(context, 1, i, Icons.build_circle_outlined, Icons.build_circle_rounded, 'Services'),
-              _tab(context, 2, i, Icons.inventory_2_outlined, Icons.inventory_2_rounded, 'Product'),
+              _tab(context, 2, i, Icons.request_quote_outlined, Icons.request_quote_rounded, 'Quotation'),
               _tab(context, 3, i, Icons.calendar_today_outlined, Icons.calendar_today_rounded, 'Bookings'),
               _tab(context, 4, i, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
             ],
