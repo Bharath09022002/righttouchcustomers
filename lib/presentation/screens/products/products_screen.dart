@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/app_image.dart';
@@ -6,7 +7,6 @@ import '../../../core/widgets/ui.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../../data/models/models.dart';
 import '../../providers/providers.dart';
-import '../../widgets/right_touch_header.dart';
 
 class ProductsScreen extends ConsumerStatefulWidget {
   final String? initialCategory;
@@ -21,7 +21,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   String _searchQuery = '';
   final TextEditingController _searchCtrl = TextEditingController();
 
-  bool _isGridView = true;
+  final bool _isGridView = true;
   bool _under50kFilter = false;
   String? _selectedBrand;
   String _sortBy = 'featured'; // 'featured', 'price_asc', 'price_desc', 'rating'
@@ -134,101 +134,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     );
   }
 
-  void _showFilterModal(List<CategoryModel> categories) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Filter Products',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Select Category',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilterChip(
-                      label: const Text('All Categories'),
-                      selected: _selectedCategory == null,
-                      onSelected: (_) {
-                        _selectCategory(null);
-                        Navigator.pop(ctx);
-                      },
-                      selectedColor: const Color(0xFFE6FDF1),
-                      checkmarkColor: const Color(0xFF16A34A),
-                    ),
-                    for (final cat in categories)
-                      FilterChip(
-                        label: Text(cat.name),
-                        selected: _selectedCategory == cat.name || _selectedCategory == cat.id,
-                        onSelected: (_) {
-                          _selectCategory(cat.name);
-                          Navigator.pop(ctx);
-                        },
-                        selectedColor: const Color(0xFFE6FDF1),
-                        checkmarkColor: const Color(0xFF16A34A),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _resetFilters();
-                      Navigator.pop(ctx);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF16A34A),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Text('Reset All Filters', style: TextStyle(fontWeight: FontWeight.w800)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+
 
   void _showQuoteRequestModal(ProductModel p) async {
     final noteCtrl = TextEditingController();
@@ -562,25 +468,68 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                         const Text(
                           'Contact via:',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF475569),
+                            color: Color(0xFF0F172A),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                          label: const Text('WhatsApp', style: TextStyle(fontSize: 11.5)),
-                          selected: contactMethod == 'whatsapp',
-                          selectedColor: const Color(0xFFDCFCE7),
-                          onSelected: (_) => setModalState(() => contactMethod = 'whatsapp'),
-                        ),
-                        const SizedBox(width: 6),
-                        ChoiceChip(
-                          label: const Text('Phone Call', style: TextStyle(fontSize: 11.5)),
-                          selected: contactMethod == 'phone',
-                          selectedColor: const Color(0xFFDCFCE7),
-                          onSelected: (_) => setModalState(() => contactMethod = 'phone'),
-                        ),
+                        const SizedBox(width: 10),
+                        for (final m in [
+                          {'label': 'WhatsApp', 'val': 'whatsapp'},
+                          {'label': 'Phone Call', 'val': 'phone'},
+                        ]) ...[
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setModalState(() => contactMethod = m['val']!);
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: contactMethod == m['val']
+                                    ? const Color(0xFF16A34A)
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: contactMethod == m['val']
+                                      ? const Color(0xFF16A34A)
+                                      : const Color(0xFFCBD5E1),
+                                  width: 1.2,
+                                ),
+                                boxShadow: contactMethod == m['val']
+                                    ? const [
+                                        BoxShadow(
+                                          color: Color(0x3316A34A),
+                                          blurRadius: 4,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (contactMethod == m['val']) ...[
+                                    const Icon(Icons.check_circle_rounded, size: 14, color: Colors.white),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(
+                                    m['label']!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: contactMethod == m['val']
+                                          ? Colors.white
+                                          : const Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                       ],
                     ),
 
@@ -660,13 +609,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   @override
   Widget build(BuildContext context) {
     final productsAsync = ref.watch(productListProvider);
-    final categoriesAsync = ref.watch(categoryListProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final productCategories = categoriesAsync.maybeWhen(
-      data: (cats) => cats.where((c) => c.isProductCategory).toList(),
-      orElse: () => <CategoryModel>[],
-    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -942,71 +885,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // 1. SEARCH BAR
-  // ---------------------------------------------------------------------------
-  Widget _buildSearchBar(bool isDark) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          )
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, color: Color(0xFF64748B), size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: (val) {
-                setState(() => _searchQuery = val);
-                ref.read(productQueryProvider.notifier).state =
-                    ProductQuery(_searchQuery, _selectedCategory);
-              },
-              decoration: InputDecoration(
-                hintText: 'Search products, brands, models...',
-                hintStyle: TextStyle(
-                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-              style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          if (_searchQuery.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                _searchCtrl.clear();
-                setState(() => _searchQuery = '');
-                ref.read(productQueryProvider.notifier).state =
-                    ProductQuery('', _selectedCategory);
-              },
-              child: const Icon(Icons.close, color: Color(0xFF94A3B8), size: 18),
-            )
-          else
-            const Icon(Icons.crop_free, color: Color(0xFF64748B), size: 20),
-        ],
-      ),
-    );
-  }
+
 
   // ---------------------------------------------------------------------------
   // 2. HERO CAROUSEL BANNER
@@ -1246,273 +1125,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // 3. CATEGORY ICON SELECTOR (All Products, Solar, Surveillance, Appliances, etc.)
-  // ---------------------------------------------------------------------------
-  Widget _buildCategoryIconSelector(bool isDark, List<CategoryModel> categories) {
-    final items = [
-      _CategoryIconItem('All Products', Icons.grid_view_rounded, null, isAll: true),
-      _CategoryIconItem('Solar Products', Icons.wb_sunny_rounded, 'solar', iconColor: const Color(0xFFF59E0B)),
-      _CategoryIconItem('Surveillance', Icons.videocam_rounded, 'surveil', iconColor: const Color(0xFF3B82F6)),
-      _CategoryIconItem('Appliances', Icons.local_laundry_service_outlined, 'appliance', iconColor: const Color(0xFF64748B)),
-      _CategoryIconItem('AC & Cooling', Icons.ac_unit_rounded, 'air', iconColor: const Color(0xFF06B6D4)),
-      _CategoryIconItem('Electrical', Icons.bolt_rounded, 'electr', iconColor: const Color(0xFF22C55E)),
-      _CategoryIconItem('More', Icons.apps_rounded, 'more', iconColor: const Color(0xFF8B5CF6)),
-    ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          for (final item in items)
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: _buildCategoryCard(item, isDark, categories),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(
-    _CategoryIconItem item,
-    bool isDark,
-    List<CategoryModel> categories,
-  ) {
-    final isSelected = item.isAll
-        ? _selectedCategory == null
-        : (_selectedCategory != null &&
-            _selectedCategory!.toLowerCase().contains(item.matchKeyword ?? item.label.toLowerCase()));
-
-    return InkWell(
-      onTap: () {
-        if (item.isAll) {
-          _selectCategory(null);
-        } else if (item.matchKeyword == 'more') {
-          _showFilterModal(categories);
-        } else {
-          final matched = categories.firstWhere(
-            (c) => c.name.toLowerCase().contains(item.matchKeyword!),
-            orElse: () => CategoryModel(id: '', name: item.label),
-          );
-          _selectCategory(matched.name);
-        }
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 72,
-        height: 72,
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFE8FAF2)
-              : (isDark ? const Color(0xFF1E293B) : Colors.white),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF16A34A)
-                : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-            width: isSelected ? 1.5 : 1.0,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x06000000),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            )
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              item.icon,
-              size: 24,
-              color: isSelected ? const Color(0xFF16A34A) : (item.iconColor ?? const Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected
-                    ? const Color(0xFF16A34A)
-                    : (isDark ? Colors.white : const Color(0xFF1E293B)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // 5. FILTER CHIPS & VIEW SWITCHER ROW
-  // ---------------------------------------------------------------------------
-  Widget _buildFilterChipsRow(bool isDark, List<CategoryModel> categories) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: [
-          // Filter button
-          _filterPill(
-            icon: Icons.filter_alt_outlined,
-            label: 'Filter',
-            isSelected: _selectedCategory != null,
-            isDark: isDark,
-            onTap: () => _showFilterModal(categories),
-          ),
-          const SizedBox(width: 8),
-
-          // Sort button
-          _filterPill(
-            icon: Icons.swap_vert_rounded,
-            label: _sortBy == 'featured' ? 'Sort' : 'Sorted',
-            isSelected: _sortBy != 'featured',
-            isDark: isDark,
-            onTap: _showSortModal,
-          ),
-          const SizedBox(width: 8),
-
-          // Under ₹50,000 quick toggle
-          _filterPill(
-            icon: Icons.currency_rupee_rounded,
-            label: 'Under ₹50,000',
-            isSelected: _under50kFilter,
-            isDark: isDark,
-            onTap: () {
-              setState(() => _under50kFilter = !_under50kFilter);
-            },
-          ),
-          const SizedBox(width: 8),
-
-          // Brand dropdown
-          _filterPill(
-            icon: null,
-            label: _selectedBrand ?? 'Brand',
-            hasDropdown: true,
-            isSelected: _selectedBrand != null,
-            isDark: isDark,
-            onTap: () {
-              setState(() {
-                _selectedBrand = _selectedBrand == null ? 'RightTouch' : null;
-              });
-            },
-          ),
-          const SizedBox(width: 14),
-
-          // View mode switch: Grid vs List
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                InkWell(
-                  onTap: () => setState(() => _isGridView = true),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: _isGridView ? const Color(0xFF16A34A) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.grid_view_rounded,
-                      size: 16,
-                      color: _isGridView ? Colors.white : const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 2),
-                InkWell(
-                  onTap: () => setState(() => _isGridView = false),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: !_isGridView ? const Color(0xFF16A34A) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.view_list_rounded,
-                      size: 16,
-                      color: !_isGridView ? Colors.white : const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterPill({
-    IconData? icon,
-    required String label,
-    bool hasDropdown = false,
-    required bool isSelected,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFE8FAF2)
-              : (isDark ? const Color(0xFF1E293B) : Colors.white),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF16A34A)
-                : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 14, color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF64748B)),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected
-                    ? const Color(0xFF16A34A)
-                    : (isDark ? Colors.white : const Color(0xFF1E293B)),
-              ),
-            ),
-            if (hasDropdown) ...[
-              const SizedBox(width: 4),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 15,
-                color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF64748B),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 
   // ---------------------------------------------------------------------------
   // 6. FEATURED CATEGORY BANNERS (Solar Panels & CCTV Cameras)
@@ -1672,7 +1285,6 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   // 7. PRODUCT GRID CARD
   // ---------------------------------------------------------------------------
   Widget _buildProductGridCard(ProductModel p, int index, bool isDark) {
-    final qty = _quantities[p.id] ?? 1;
     final isFav = _favorites.contains(p.id);
 
     // Dynamic badge based on index or product properties
@@ -2368,22 +1980,6 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 // ---------------------------------------------------------------------------
 // DATA CLASSES
 // ---------------------------------------------------------------------------
-class _CategoryIconItem {
-  final String label;
-  final IconData icon;
-  final String? matchKeyword;
-  final Color? iconColor;
-  final bool isAll;
-
-  const _CategoryIconItem(
-    this.label,
-    this.icon,
-    this.matchKeyword, {
-    this.iconColor,
-    this.isAll = false,
-  });
-}
-
 class _BadgeInfo {
   final String label;
   final IconData icon;

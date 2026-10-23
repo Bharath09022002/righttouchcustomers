@@ -133,40 +133,45 @@ class RightTouchTopAppBar extends ConsumerWidget implements PreferredSizeWidget 
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Back button if canPop or leading specified
-                  if (leading != null) ...[
-                    leading!,
-                    const SizedBox(width: 8),
-                  ] else if (showLeading && canPop && !isRootTab) ...[
-                    _buildCircleButton(
-                      icon: leadingIcon ?? Icons.arrow_back_rounded,
-                      iconColor: iconColor,
-                      buttonBg: actionButtonBg,
-                      buttonBorder: actionButtonBorder,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        if (onLeadingTap != null) {
-                          onLeadingTap!();
-                        } else {
-                          try {
-                            if (context.canPop()) {
-                              context.pop();
-                              return;
-                            }
-                          } catch (_) {}
-                          Navigator.of(context).maybePop();
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-
-                  // LEFT: Brand capsule with logo icon and page name in green
-                  Flexible(
-                    child: _buildBrandCapsule(
-                      context,
-                      isDark: isDark,
-                      displayName: displayName,
+                  // LEFT: Back button + Brand capsule grouped on the left
+                  Expanded(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (leading != null) ...[
+                          leading!,
+                          const SizedBox(width: 8),
+                        ] else if (showLeading && canPop && !isRootTab) ...[
+                          _buildCircleButton(
+                            icon: leadingIcon ?? Icons.arrow_back_rounded,
+                            iconColor: iconColor,
+                            buttonBg: actionButtonBg,
+                            buttonBorder: actionButtonBorder,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              if (onLeadingTap != null) {
+                                onLeadingTap!();
+                              } else {
+                                try {
+                                  if (context.canPop()) {
+                                    context.pop();
+                                    return;
+                                  }
+                                } catch (_) {}
+                                Navigator.of(context).maybePop();
+                              }
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Flexible(
+                          child: _buildBrandCapsule(
+                            context,
+                            isDark: isDark,
+                            displayName: displayName,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/ui/app_feedback.dart';
+import '../../../core/services/razorpay_service.dart';
 import '../../providers/providers.dart';
 import '../../widgets/guest_login_placeholder.dart';
 
@@ -274,7 +275,8 @@ class PaymentsScreen extends ConsumerWidget {
                                 InkWell(
                                   onTap: () async {
                                     try {
-                                      final res = await ref.read(paymentRepoProvider).createOrder(x.bookingId);
+                                      final repo = ref.read(paymentRepoProvider);
+                                      final res = await repo.createOrder(x.bookingId);
                                       if (res.free) {
                                         if (context.mounted) {
                                           showSuccess(
@@ -287,11 +289,37 @@ class PaymentsScreen extends ConsumerWidget {
                                         }
                                         return;
                                       }
+
+                                      // Initialize and open native Razorpay Checkout
+                                      RazorpayService.instance.initialize(repo);
+                                      final user = ref.read(authProvider).user;
                                       if (context.mounted) {
-                                        showSuccess(
-                                          context,
-                                          title: 'Payment Order Ready',
-                                          message: 'Order ID: ${res.providerOrderId ?? "created"} (₹${res.amountInRupees})',
+                                        await RazorpayService.instance.openCheckout(
+                                          context: context,
+                                          bookingId: x.bookingId,
+                                          order: res,
+                                          userPhone: user?.mobile,
+                                          userEmail: user?.email,
+                                          onComplete: (success, message) {
+                                            ref.invalidate(paymentListProvider);
+                                            ref.invalidate(paymentSummaryProvider);
+                                            ref.invalidate(myBookingsProvider);
+                                            if (context.mounted) {
+                                              if (success) {
+                                                showSuccess(
+                                                  context,
+                                                  title: 'Payment Successful',
+                                                  message: message,
+                                                );
+                                              } else {
+                                                showError(
+                                                  context,
+                                                  title: 'Payment Notice',
+                                                  message: message,
+                                                );
+                                              }
+                                            }
+                                          },
                                         );
                                       }
                                     } catch (e) {

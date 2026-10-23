@@ -129,7 +129,7 @@ void main() {
     expect(find.text('Shopping Cart & Checkout'), findsOneWidget);
 
     // Scroll to reveal lower sections
-    await tester.drag(find.byType(ListView), const Offset(0, -350));
+    await tester.scrollUntilVisible(find.text('Log Out'), 200, scrollable: find.byType(Scrollable));
     await tester.pump();
 
     expect(find.text('Log Out'), findsOneWidget);

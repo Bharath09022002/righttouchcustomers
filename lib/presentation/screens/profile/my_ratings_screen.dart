@@ -223,7 +223,7 @@ class _MyRatingsScreenState extends ConsumerState<MyRatingsScreen> {
                       ),
                       icon: const Icon(Icons.calendar_today_outlined, size: 18),
                       label: const Text('View Completed Bookings', style: TextStyle(fontWeight: FontWeight.w700)),
-                      onPressed: () => context.push('/bookings'),
+                      onPressed: () => context.go('/bookings?filter=Completed'),
                     ),
                   ),
                 ],

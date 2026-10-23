@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
-import 'package:righttouch/data/models/models.dart';
 import 'package:righttouch/presentation/screens/booking/bookings_screen.dart';
 import 'package:righttouch/presentation/screens/home/home_screen.dart';
 import 'package:righttouch/presentation/screens/products/products_screen.dart';

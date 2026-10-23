@@ -35,9 +35,7 @@ void main() {
       expect(find.byType(ProductDetailScreen), findsOneWidget);
       expect(find.text('RightTouch 5kVA Solar Inverter'), findsOneWidget);
       expect(find.text('₹45000'), findsWidgets);
-      expect(find.text('Add to Cart'), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsOneWidget);
-      expect(find.byIcon(Icons.remove), findsOneWidget);
+      expect(find.text('Request Quote'), findsOneWidget);
     });
 
     testWidgets('Quote Required Product: renders quote badge and request quote button', (tester) async {
@@ -66,7 +64,7 @@ void main() {
 
       expect(find.byType(ProductDetailScreen), findsOneWidget);
       expect(find.text('Industrial Rooftop 50kW Setup'), findsOneWidget);
-      expect(find.text('Request Customized Quote'), findsOneWidget);
+      expect(find.text('Request Quote'), findsOneWidget);
       expect(find.textContaining('Custom Quote Required'), findsOneWidget);
     });
 

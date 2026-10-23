@@ -464,7 +464,7 @@ class BookingModel {
       svcName = str(m['serviceName'] ?? m['name'] ?? m['title'] ?? m['service']);
     }
     if (svcName.isEmpty) {
-      svcName = 'Solar Hybrid Inverter General Service';
+      svcName = 'Service';
     }
 
     svcImg ??= (m['image'] ?? m['thumbnail'] ?? m['serviceImage'])?.toString();

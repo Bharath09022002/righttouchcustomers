@@ -21,3 +21,17 @@
 
 # Flutter Local Notifications
 -keep class com.dexterous.flutterlocalnotifications.** { *; }
+
+# Razorpay SDK
+-keep class com.razorpay.** { *; }
+-dontwarn com.razorpay.**
+-keepattributes JavascriptInterface
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# Socket.IO & Engine.IO
+-keep class io.socket.** { *; }
+-keep class io.socket.client.** { *; }
+-keep class io.socket.engineio.client.** { *; }
+-dontwarn io.socket.**

@@ -14,14 +14,29 @@ import '../../widgets/right_touch_header.dart';
 import '../../widgets/guest_login_placeholder.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
-  const BookingsScreen({super.key});
+  final String? initialFilter;
+  const BookingsScreen({super.key, this.initialFilter});
 
   @override
   ConsumerState<BookingsScreen> createState() => _BookingsScreenState();
 }
 
 class _BookingsScreenState extends ConsumerState<BookingsScreen> {
-  String _selectedFilter = 'All';
+  late String _selectedFilter;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFilter = widget.initialFilter ?? 'All';
+  }
+
+  @override
+  void didUpdateWidget(covariant BookingsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialFilter != null && widget.initialFilter != oldWidget.initialFilter) {
+      setState(() => _selectedFilter = widget.initialFilter!);
+    }
+  }
 
   Future<void> _deleteSingleBooking(String id) async {
     final confirmed = await showDialog<bool>(

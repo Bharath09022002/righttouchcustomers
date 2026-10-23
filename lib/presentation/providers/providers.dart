@@ -101,40 +101,45 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (_bootstrapping || state.user != null) return;
     _bootstrapping = true;
     try {
-      final t = ref.read(tokenStorageProvider);
-      await t.loadCache();
-      if (t.cachedToken?.isNotEmpty == true) {
-        state = state.copyWith(loggedIn: true, isGuest: false, loading: true);
-        try {
-          final r = await ref.read(authRepoProvider).me();
-          if (r is ApiOk) {
-            final d = r.data;
-            final m = asMap(d);
-            state = state.copyWith(
-                user: UserModel.fromJson(m.containsKey('user') ? m['user'] : d),
-                isGuest: false,
-                loading: false);
-            NotificationService.instance.syncCurrentToken();
-            if (t.cachedToken != null && t.cachedToken!.isNotEmpty) {
-              SocketService.instance.connect(t.cachedToken!);
-            }
-          } else {
-            // Access token dead → try silent refresh before forcing login.
-            final refreshed = await refreshSession();
-            if (!refreshed) {
-              await t.clear();
-              state = state.copyWith(loading: false, loggedIn: false, isGuest: false, user: null);
-            } else {
-              await bootstrap();
-            }
-          }
-        } catch (_) {
-          await t.clear();
-          state = state.copyWith(loading: false, loggedIn: false, isGuest: false, user: null);
-        }
-      }
+      await _executeBootstrap();
     } finally {
       _bootstrapping = false;
+    }
+  }
+
+  Future<void> _executeBootstrap() async {
+    final t = ref.read(tokenStorageProvider);
+    await t.loadCache();
+    if (t.cachedToken?.isNotEmpty == true) {
+      state = state.copyWith(loggedIn: true, isGuest: false, loading: true);
+      try {
+        final r = await ref.read(authRepoProvider).me();
+        if (r is ApiOk) {
+          final d = r.data;
+          final m = asMap(d);
+          state = state.copyWith(
+              user: UserModel.fromJson(m.containsKey('user') ? m['user'] : d),
+              isGuest: false,
+              loading: false);
+          NotificationService.instance.syncCurrentToken();
+          if (t.cachedToken != null && t.cachedToken!.isNotEmpty) {
+            SocketService.instance.connect(t.cachedToken!);
+          }
+        } else {
+          // Access token dead → try silent refresh before forcing login.
+          final refreshed = await refreshSession();
+          if (!refreshed) {
+            await t.clear();
+            state = state.copyWith(loading: false, loggedIn: false, isGuest: false, user: null);
+          } else {
+            // Re-fetch profile with fresh token without hitting the _bootstrapping guard
+            await _executeBootstrap();
+          }
+        }
+      } catch (_) {
+        await t.clear();
+        state = state.copyWith(loading: false, loggedIn: false, isGuest: false, user: null);
+      }
     }
   }
 

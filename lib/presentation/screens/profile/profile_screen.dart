@@ -42,7 +42,7 @@ class ProfileScreen extends ConsumerWidget {
       backgroundColor: Colors.white,
       appBar: const RightTouchTopAppBar(title: 'Profile'),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 40),
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
         children: [
           // User Profile Card
           _buildUserProfileCard(
@@ -55,12 +55,12 @@ class ProfileScreen extends ConsumerWidget {
             initial: initial,
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
           // Shopping Cart & Checkout Card
           _buildCartCheckoutCard(context, isDark: isDark, cartCount: cartCount),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
 
           // Account & Preferences Group
           _buildSectionHeader(
@@ -68,7 +68,7 @@ class ProfileScreen extends ConsumerWidget {
             subtitle: 'Manage your account settings',
             onViewAll: () => context.push('/account-settings'),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           _buildCardGroup(
             isDark: isDark,
             children: [
@@ -117,7 +117,7 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
 
           // Support & Legal Group
           _buildSectionHeader(
@@ -125,7 +125,7 @@ class ProfileScreen extends ConsumerWidget {
             subtitle: "We're here to help you 24/7",
             onViewAll: () => context.push('/support-legal'),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           _buildCardGroup(
             isDark: isDark,
             children: [
@@ -146,12 +146,12 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Need Help? Banner Card
           _buildNeedHelpBanner(context),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 14),
 
           // Action Buttons: Log Out & All Devices
           _buildActionButtons(context, ref),

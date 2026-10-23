@@ -366,10 +366,12 @@ class CatalogRepository {
         final inner = m.containsKey('service') ? m['service'] : d;
         return ServiceModel.fromJson(inner);
       }
+      if (r is ApiErr) throw ApiException(r.message);
+      throw ApiException('Service not found');
     } catch (e) {
-      if (kDebugMode) debugPrint('[CatalogRepository] error fetching service $id: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to load service: $e');
     }
-    return fallbackServices.firstWhere((s) => s.id == id, orElse: () => fallbackServices.first);
   }
 }
 
@@ -518,15 +520,14 @@ class ProductRepository {
           }
         }
       }
-    } catch (_) {}
+      if (r is ApiErr) throw ApiException(r.message);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+    }
     final list = await products();
-    return list.firstWhere(
-      (p) => p.id == id,
-      orElse: () => fallbackProducts.firstWhere(
-        (p) => p.id == id,
-        orElse: () => fallbackProducts.first,
-      ),
-    );
+    final match = list.where((p) => p.id == id);
+    if (match.isNotEmpty) return match.first;
+    throw ApiException('Product not found');
   }
 }
 

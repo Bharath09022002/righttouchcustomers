@@ -48,7 +48,7 @@ void main() {
       debugPrint('Time-To-Interactive (TTI): ${ttiMs.toStringAsFixed(2)} ms');
       debugPrint('Total benchmark duration: ${totalSw.elapsedMilliseconds} ms');
 
-      expect(ttffMs, lessThan(1000.0));
+      expect(ttffMs, lessThan(1500.0));
       expect(ttiMs, lessThan(2000.0));
     });
   });

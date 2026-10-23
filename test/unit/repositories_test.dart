@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:righttouch/core/network/api_result.dart';
 import 'package:righttouch/data/datasources/remote_gateway.dart';
-import 'package:righttouch/data/models/models.dart';
 import 'package:righttouch/data/repositories/repositories.dart';
 
 class MockRemoteGateway extends Mock implements RemoteGateway {}

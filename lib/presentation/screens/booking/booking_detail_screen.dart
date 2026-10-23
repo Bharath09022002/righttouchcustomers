@@ -8,6 +8,7 @@ import '../../../core/config/env.dart';
 import '../../../core/ui/app_feedback.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/services/razorpay_service.dart';
 import '../../../data/models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/review_bottom_sheet.dart';
@@ -219,16 +220,45 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
     setState(() => _busy = true);
     try {
-      await ref.read(paymentRepoProvider).createOrder(b.id);
+      final repo = ref.read(paymentRepoProvider);
+      final res = await repo.createOrder(b.id);
+      if (res.free) {
+        if (mounted) {
+          showSuccess(
+            context,
+            title: 'Booking Free',
+            message: 'No payment needed — booking marked paid.',
+          );
+        }
+        ref.invalidate(bookingDetailProvider(widget.id));
+        ref.invalidate(paymentListProvider);
+        return;
+      }
+
+      // Open Razorpay Native Checkout
+      RazorpayService.instance.initialize(repo);
+      final user = ref.read(authProvider).user;
       if (mounted) {
-        showSuccess(
-          context,
-          title: 'Payment Initiated',
-          message: 'Razorpay checkout order created successfully.',
+        await RazorpayService.instance.openCheckout(
+          context: context,
+          bookingId: b.id,
+          order: res,
+          userPhone: user?.mobile,
+          userEmail: user?.email,
+          onComplete: (success, message) {
+            ref.invalidate(bookingDetailProvider(widget.id));
+            ref.invalidate(paymentListProvider);
+            ref.invalidate(paymentSummaryProvider);
+            if (mounted) {
+              if (success) {
+                showSuccess(context, title: 'Payment Successful', message: message);
+              } else {
+                showError(context, title: 'Payment Notice', message: message);
+              }
+            }
+          },
         );
       }
-      ref.invalidate(bookingDetailProvider(widget.id));
-      ref.invalidate(paymentListProvider);
     } catch (e) {
       if (mounted) {
         final appErr = mapException(e);

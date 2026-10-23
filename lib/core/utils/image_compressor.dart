@@ -12,20 +12,27 @@ class ImageCompressor {
     int maxDimension = 1080,
     ui.ImageByteFormat format = ui.ImageByteFormat.png,
   }) async {
-    // 1. Instantiate engine codec with target dimension downsampling
-    final codec = await ui.instantiateImageCodec(
-      rawBytes,
-      targetWidth: maxDimension,
-    );
+    ui.Codec? codec;
+    ui.Image? image;
+    try {
+      // 1. Instantiate engine codec with target dimension downsampling
+      codec = await ui.instantiateImageCodec(
+        rawBytes,
+        targetWidth: maxDimension,
+      );
 
-    final frameInfo = await codec.getNextFrame();
-    final image = frameInfo.image;
+      final frameInfo = await codec.getNextFrame();
+      image = frameInfo.image;
 
-    // 2. Export optimized bytes
-    final byteData = await image.toByteData(format: format);
-    if (byteData == null) return rawBytes;
+      // 2. Export optimized bytes
+      final byteData = await image.toByteData(format: format);
+      if (byteData == null) return rawBytes;
 
-    return byteData.buffer.asUint8List();
+      return byteData.buffer.asUint8List();
+    } finally {
+      image?.dispose();
+      codec?.dispose();
+    }
   }
 
   /// Calculates human-readable file size in KB or MB

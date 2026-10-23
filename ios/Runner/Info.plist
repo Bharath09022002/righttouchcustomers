@@ -68,6 +68,10 @@
 	<string>Main</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>RightTouch requires your location to check doorstep service availability and dispatch technicians.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>RightTouch needs camera access to let you capture and upload service issue photos and equipment details.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>RightTouch needs photo library access to upload images for service complaints and warranty verification.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

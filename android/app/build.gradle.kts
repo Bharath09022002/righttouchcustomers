@@ -64,7 +64,11 @@ android {
                 "proguard-rules.pro"
             )
             val releaseSigning = signingConfigs.getByName("release")
-            signingConfig = if (releaseSigning.storeFile != null) releaseSigning else signingConfigs.getByName("debug")
+            if (releaseSigning.storeFile != null) {
+                signingConfig = releaseSigning
+            } else {
+                throw org.gradle.api.GradleException("Release build requires valid signing configuration in key.properties (storeFile not found).")
+            }
         }
     }
 }

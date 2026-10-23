@@ -108,7 +108,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/bookings',
-            pageBuilder: (_, __) => const NoTransitionPage(child: BookingsScreen()),
+            pageBuilder: (_, s) => NoTransitionPage(
+              child: BookingsScreen(initialFilter: s.uri.queryParameters['filter']),
+            ),
           ),
           GoRoute(
             path: '/profile',

@@ -140,7 +140,7 @@ void main() {
         'status': 'in_progress',
       };
       final model = BookingModel.fromJson(json);
-      expect(model.serviceName, 'Solar Hybrid Inverter General Service');
+      expect(model.serviceName, 'Service');
       expect(parseBookingState(model.status), BookingState.inProgress);
     });
 

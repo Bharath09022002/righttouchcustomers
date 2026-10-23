@@ -17,8 +17,7 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
-  int _quantity = 1;
-  bool _isAdding = false;
+  final int _quantity = 1;
 
   void _showQuoteModal(ProductModel p) async {
     final noteCtrl = TextEditingController();
@@ -143,29 +142,66 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     children: [
                       const Text(
                         'Contact via:',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
                       ),
-                      const SizedBox(width: 8),
-                      ChoiceChip(
-                        label: const Text('WhatsApp', style: TextStyle(fontSize: 11.5)),
-                        selected: contactMethod == 'whatsapp',
-                        selectedColor: const Color(0xFFDCFCE7),
-                        onSelected: (_) => setModalState(() => contactMethod = 'whatsapp'),
-                      ),
-                      const SizedBox(width: 6),
-                      ChoiceChip(
-                        label: const Text('Call', style: TextStyle(fontSize: 11.5)),
-                        selected: contactMethod == 'call',
-                        selectedColor: const Color(0xFFDCFCE7),
-                        onSelected: (_) => setModalState(() => contactMethod = 'call'),
-                      ),
-                      const SizedBox(width: 6),
-                      ChoiceChip(
-                        label: const Text('Both', style: TextStyle(fontSize: 11.5)),
-                        selected: contactMethod == 'both',
-                        selectedColor: const Color(0xFFDCFCE7),
-                        onSelected: (_) => setModalState(() => contactMethod = 'both'),
-                      ),
+                      const SizedBox(width: 10),
+                      for (final m in [
+                        {'label': 'WhatsApp', 'val': 'whatsapp'},
+                        {'label': 'Call', 'val': 'call'},
+                        {'label': 'Both', 'val': 'both'},
+                      ]) ...[
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setModalState(() => contactMethod = m['val']!);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: contactMethod == m['val']
+                                  ? const Color(0xFF16A34A)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: contactMethod == m['val']
+                                    ? const Color(0xFF16A34A)
+                                    : const Color(0xFFCBD5E1),
+                                width: 1.2,
+                              ),
+                              boxShadow: contactMethod == m['val']
+                                  ? const [
+                                      BoxShadow(
+                                        color: Color(0x3316A34A),
+                                        blurRadius: 4,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (contactMethod == m['val']) ...[
+                                  const Icon(Icons.check_circle_rounded, size: 14, color: Colors.white),
+                                  const SizedBox(width: 4),
+                                ],
+                                Text(
+                                  m['label']!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: contactMethod == m['val']
+                                        ? Colors.white
+                                        : const Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                     ],
                   ),
 
@@ -231,7 +267,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final productAsync = ref.watch(productDetailProvider(widget.id));
-    final cartItems = ref.watch(cartProvider).valueOrNull ?? [];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -239,7 +274,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       appBar: const RightTouchTopAppBar(title: 'Product Details'),
       body: productAsync.when(
         data: (p) {
-          final inCart = cartItems.any((it) => it.itemId == p.id || it.id == p.id);
           final hasPrice = p.price != null && p.price! > 0 && !p.quoteRequired;
 
           return Column(
@@ -627,151 +661,26 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 ),
                 child: SafeArea(
                   top: false,
-                  child: hasPrice
-                      ? Row(
-                          children: [
-                            // Quantity selector
-                            Container(
-                              height: 48,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove, size: 18),
-                                    onPressed: _quantity > 1
-                                        ? () => setState(() => _quantity--)
-                                        : null,
-                                  ),
-                                  Text(
-                                    '$_quantity',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 15,
-                                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.add, size: 18),
-                                    onPressed: () => setState(() => _quantity++),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-
-                            // Add to cart button
-                            Expanded(
-                              child: SizedBox(
-                                height: 48,
-                                child: ElevatedButton.icon(
-                                  onPressed: _isAdding
-                                      ? null
-                                      : () async {
-                                          setState(() => _isAdding = true);
-                                          HapticFeedback.lightImpact();
-                                          try {
-                                            await ref.read(cartRepoProvider).add(p.id, 'product', _quantity);
-                                            ref.invalidate(cartProvider);
-                                            if (context.mounted) {
-                                              showSuccess(
-                                                context,
-                                                title: 'Added to cart',
-                                                message: '$_quantity x ${p.name} added to cart.',
-                                                actionLabel: 'View Cart',
-                                                onAction: () => context.push('/cart'),
-                                              );
-                                            }
-                                          } catch (e) {
-                                            if (context.mounted) {
-                                              final appErr = mapException(e);
-                                              showError(
-                                                context,
-                                                title: 'Notice',
-                                                message: appErr.userMessage,
-                                              );
-                                            }
-                                          } finally {
-                                            if (mounted) setState(() => _isAdding = false);
-                                          }
-                                        },
-                                  icon: _isAdding
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                        )
-                                      : const Icon(Icons.shopping_cart_outlined, size: 17),
-                                  label: Text(
-                                    inCart ? 'Add More' : 'Add to Cart',
-                                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF16A34A),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-
-                            // Add Quote button
-                            Expanded(
-                              child: SizedBox(
-                                height: 48,
-                                child: OutlinedButton.icon(
-                                  onPressed: () => _showQuoteModal(p),
-                                  icon: const Icon(Icons.request_quote_rounded, size: 17),
-                                  label: const Text(
-                                    'Add Quote',
-                                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF16A34A),
-                                    side: const BorderSide(color: Color(0xFF16A34A), width: 1.4),
-                                    backgroundColor: isDark
-                                        ? const Color(0xFF064E3B).withAlpha(60)
-                                        : const Color(0xFFF0FDF4),
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _showQuoteModal(p),
-                            icon: const Icon(Icons.request_quote_rounded, size: 20),
-                            label: const Text(
-                              'Request Customized Quote',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF16A34A),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              elevation: 0,
-                            ),
-                          ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showQuoteModal(p),
+                      icon: const Icon(Icons.request_quote_rounded, size: 20),
+                      label: const Text(
+                        'Request Quote',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],

@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:righttouch/core/network/api_client.dart';
-import 'package:righttouch/core/network/api_result.dart';
 import 'package:righttouch/core/storage/token_storage.dart';
 
 class MockTokenStorage extends Mock implements TokenStorage {}
@@ -32,7 +31,6 @@ void main() {
       // Simulate interceptor onRequest
       final interceptor = client.dio.interceptors.whereType<QueuedInterceptorsWrapper>().first;
       
-      bool nextCalled = false;
       interceptor.onRequest(options, RequestInterceptorHandler());
       // Give async token fetch time to settle
       await Future<void>.delayed(const Duration(milliseconds: 10));

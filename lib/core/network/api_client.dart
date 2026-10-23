@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../config/env.dart';
@@ -13,6 +14,9 @@ class ApiClient {
 
   /// Whether the backend has responded at least once (warm).
   static bool _backendWarm = false;
+
+  /// Single-flight mutex for token refresh so concurrent 401 requests don't race
+  static Completer<String?>? _refreshCompleter;
 
   ApiClient(this.tokens)
       : dio = Dio(BaseOptions(
@@ -54,45 +58,22 @@ class ApiClient {
             e.requestOptions.path.contains('/login') ||
             e.requestOptions.path.contains('/signup');
 
+        // Prevent infinite loops on requests already retried
+        final alreadyRetried = e.requestOptions.extra['_isRetry'] == true;
+
         // Transparent token refresh on 401 Unauthorized
-        if (e.response?.statusCode == 401 && !isAuthEndpoint) {
-          final rt = await tokens.getRefreshToken();
-          if (rt != null && rt.isNotEmpty) {
-            try {
-              final tokenDio = Dio(BaseOptions(baseUrl: Env.baseUrl));
-              final refreshRes = await tokenDio.post(
-                '/api/user/auth/refresh',
-                data: {'refresh_token': rt, 'refreshToken': rt},
-              );
-
-              final body = refreshRes.data;
-              String? newToken;
-              String? newRefresh;
-              if (body is Map) {
-                final resMap = body['result'] is Map ? body['result'] : body;
-                newToken = (resMap['token'] ?? resMap['accessToken'])?.toString();
-                newRefresh = (resMap['refresh_token'] ?? resMap['refreshToken'])?.toString();
-              }
-
-              if (newToken != null && newToken.isNotEmpty) {
-                await tokens.saveToken(newToken);
-                if (newRefresh != null && newRefresh.isNotEmpty) {
-                  await tokens.saveRefreshToken(newRefresh);
-                }
-
-                // Retry original request with newly minted token
-                final retryOpts = e.requestOptions;
-                retryOpts.headers['Authorization'] = 'Bearer $newToken';
-                final clonedResponse = await dio.fetch(retryOpts);
-                return handler.resolve(clonedResponse);
-              }
-            } catch (err) {
-              if (err is DioException &&
-                  (err.response?.statusCode == 401 ||
-                      err.response?.statusCode == 403)) {
-                await tokens.clear();
-              }
+        if (e.response?.statusCode == 401 && !isAuthEndpoint && !alreadyRetried) {
+          try {
+            final newToken = await _performSingleFlightRefresh();
+            if (newToken != null && newToken.isNotEmpty) {
+              final retryOpts = e.requestOptions;
+              retryOpts.headers['Authorization'] = 'Bearer $newToken';
+              retryOpts.extra['_isRetry'] = true;
+              final clonedResponse = await dio.fetch(retryOpts);
+              return handler.resolve(clonedResponse);
             }
+          } catch (_) {
+            // Handled inside _performSingleFlightRefresh
           }
         }
 
@@ -107,6 +88,59 @@ class ApiClient {
         handler.next(e);
       },
     ));
+  }
+
+  Future<String?> _performSingleFlightRefresh() async {
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
+
+    final completer = Completer<String?>();
+    _refreshCompleter = completer;
+
+    try {
+      final rt = await tokens.getRefreshToken();
+      if (rt == null || rt.isEmpty) {
+        completer.complete(null);
+        return null;
+      }
+
+      final tokenDio = Dio(BaseOptions(baseUrl: Env.baseUrl));
+      final refreshRes = await tokenDio.post(
+        '/api/user/auth/refresh',
+        data: {'refresh_token': rt, 'refreshToken': rt},
+      );
+
+      final body = refreshRes.data;
+      String? newToken;
+      String? newRefresh;
+      if (body is Map) {
+        final resMap = body['result'] is Map ? body['result'] : body;
+        newToken = (resMap['token'] ?? resMap['accessToken'])?.toString();
+        newRefresh = (resMap['refresh_token'] ?? resMap['refreshToken'])?.toString();
+      }
+
+      if (newToken != null && newToken.isNotEmpty) {
+        await tokens.saveToken(newToken);
+        if (newRefresh != null && newRefresh.isNotEmpty) {
+          await tokens.saveRefreshToken(newRefresh);
+        }
+        completer.complete(newToken);
+        return newToken;
+      } else {
+        completer.complete(null);
+        return null;
+      }
+    } catch (err) {
+      if (err is DioException &&
+          (err.response?.statusCode == 401 || err.response?.statusCode == 403)) {
+        await tokens.clear();
+      }
+      completer.complete(null);
+      return null;
+    } finally {
+      _refreshCompleter = null;
+    }
   }
 
   /// Wake-up ping for Render cold starts.

@@ -7,6 +7,7 @@ import '../../../core/ui/app_feedback.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/ui.dart';
 import '../../../data/models/models.dart';
+import '../../../core/services/razorpay_service.dart';
 import '../../providers/providers.dart';
 import '../../widgets/right_touch_header.dart';
 import '../../widgets/review_bottom_sheet.dart';
@@ -59,18 +60,16 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
     setState(() => _submitting = true);
     try {
       final auth = ref.read(authProvider);
-      if (auth.isGuest) {
-        await Future.delayed(const Duration(milliseconds: 600));
-        _requirementCtrl.clear();
+      if (auth.isGuest || !auth.loggedIn) {
+        setState(() => _submitting = false);
         if (mounted) {
-          showSuccess(
+          showError(
             context,
-            title: 'Quote Requested',
-            message: 'Your custom product quotation request has been submitted. Our technical team will prepare a proposal.',
-            actionLabel: 'View My Requests',
-            onAction: () => _tabController.animateTo(2),
+            title: 'Sign In Required',
+            message: 'Please sign in to submit a product quote request and track proposals.',
+            actionLabel: 'Sign In',
+            onAction: () => context.push('/login'),
           );
-          _tabController.animateTo(2);
         }
         return;
       }
@@ -263,16 +262,43 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
       return;
     }
     try {
-      await ref.read(paymentRepoProvider).createOrder(b.id);
-      ref.invalidate(productBookingsProvider);
-      ref.invalidate(paymentListProvider);
+      final repo = ref.read(paymentRepoProvider);
+      final res = await repo.createOrder(b.id);
+      if (res.free) {
+        ref.invalidate(productBookingsProvider);
+        ref.invalidate(paymentListProvider);
+        if (mounted) {
+          showSuccess(
+            context,
+            title: 'Order Paid',
+            message: 'This order required no payment and is marked paid.',
+          );
+        }
+        return;
+      }
+
+      // Open Razorpay Checkout Screen
+      RazorpayService.instance.initialize(repo);
+      final user = ref.read(authProvider).user;
       if (mounted) {
-        showSuccess(
-          context,
-          title: 'Payment Order Initiated',
-          message: 'Payment order created. You can track transaction status in Payments.',
-          actionLabel: 'View Payments',
-          onAction: () => context.push('/payments'),
+        await RazorpayService.instance.openCheckout(
+          context: context,
+          bookingId: b.id,
+          order: res,
+          userPhone: user?.mobile,
+          userEmail: user?.email,
+          onComplete: (success, message) {
+            ref.invalidate(productBookingsProvider);
+            ref.invalidate(paymentListProvider);
+            ref.invalidate(paymentSummaryProvider);
+            if (mounted) {
+              if (success) {
+                showSuccess(context, title: 'Payment Successful', message: message);
+              } else {
+                showError(context, title: 'Payment Notice', message: message);
+              }
+            }
+          },
         );
       }
     } catch (e) {
@@ -1398,20 +1424,55 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
                 {'label': 'Call', 'val': 'call'},
                 {'label': 'Both', 'val': 'both'},
               ]) ...[
-                ChoiceChip(
-                  label: Text(entry['label']!),
-                  selected: _contactMethod == entry['val'],
-                  selectedColor: AppColors.primarySoft,
-                  backgroundColor: Colors.white,
-                  side: BorderSide(
-                    color: _contactMethod == entry['val'] ? AppColors.primary : const Color(0xFFE2E8F0),
-                    width: 1.2,
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _contactMethod = entry['val']!);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _contactMethod == entry['val']
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: _contactMethod == entry['val']
+                            ? const Color(0xFF16A34A)
+                            : const Color(0xFFCBD5E1),
+                        width: 1.2,
+                      ),
+                      boxShadow: _contactMethod == entry['val']
+                          ? const [
+                              BoxShadow(
+                                color: Color(0x3316A34A),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_contactMethod == entry['val']) ...[
+                          const Icon(Icons.check_circle_rounded, size: 14, color: Colors.white),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          entry['label']!,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: _contactMethod == entry['val']
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  labelStyle: TextStyle(
-                    color: _contactMethod == entry['val'] ? AppColors.primaryDark : const Color(0xFF475569),
-                    fontWeight: _contactMethod == entry['val'] ? FontWeight.w800 : FontWeight.w600,
-                  ),
-                  onSelected: (_) => setState(() => _contactMethod = entry['val']!),
                 ),
                 const SizedBox(width: 8),
               ],

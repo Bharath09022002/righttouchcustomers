@@ -238,9 +238,9 @@ class NotificationService {
     final id = data['id']?.toString() ?? data['bookingId']?.toString() ?? data['orderId']?.toString();
 
     if (type.contains('booking') && id != null && id.isNotEmpty) {
-      context.push('/bookings/$id');
+      context.push('/booking/$id');
     } else if (type.contains('quote') || type.contains('quotation')) {
-      context.push('/product-quotations');
+      context.push('/quotations');
     } else {
       context.push('/notifications');
     }

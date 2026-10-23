@@ -63,27 +63,40 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _handleBookNow() async {
     final auth = ref.read(authProvider);
+    if (auth.isGuest || !auth.loggedIn) {
+      if (mounted) {
+        showError(
+          context,
+          title: 'Sign In Required',
+          message: 'Please log in to confirm your booking and assign a service technician.',
+          actionLabel: 'Sign In',
+          onAction: () => context.push('/login'),
+        );
+      }
+      return;
+    }
+
+    final addr = ref.read(selectedAddressProvider);
+    if (addr == null) {
+      if (mounted) {
+        showError(
+          context,
+          title: 'Address Required',
+          message: 'Please select or add a valid delivery address with location coordinates.',
+          actionLabel: 'Choose Address',
+          onAction: () => context.push('/addresses'),
+        );
+      }
+      return;
+    }
 
     setState(() => _busy = true);
     HapticFeedback.mediumImpact();
 
     try {
-      if (auth.isGuest) {
-        // Guest mode simulated checkout
-        await Future.delayed(const Duration(milliseconds: 700));
-        ref.invalidate(cartProvider);
-        ref.invalidate(myBookingsProvider);
-        if (mounted) context.push('/booking-success');
-        return;
-      }
-
-      // Authenticated customer checkout
-      final addr = ref.read(selectedAddressProvider);
-      final lat = addr?.lat ?? 12.9716;
-      final lng = addr?.lng ?? 77.5946;
-      final addressLine = addr != null
-          ? '${addr.line}, ${addr.city}, ${addr.state} ${addr.pincode}'
-          : 'Customer Default Address';
+      final lat = addr.lat;
+      final lng = addr.lng;
+      final addressLine = '${addr.line}, ${addr.city}, ${addr.state} ${addr.pincode}';
 
       final scheduledTime = _scheduleMode == 'instant'
           ? 'In 30 mins'
@@ -94,7 +107,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         'latitude': lat,
         'longitude': lng,
         'addressLine': addressLine,
-        if (addr?.id != null) 'addressId': addr!.id,
+        'addressId': addr.id,
         'paymentMethod': 'online',
         'bookingType': _scheduleMode,
         'scheduledSlot': scheduledTime,

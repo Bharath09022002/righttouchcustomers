@@ -226,28 +226,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 14),
 
                         // 2. BRAND NAME: RIGHT TOUCH
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Text(
-                              'RIGHT ',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.6,
-                                color: Color(0xFF0F172A),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                'RIGHT ',
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.6,
+                                  color: Color(0xFF0F172A),
+                                ),
                               ),
-                            ),
-                            Text(
-                              'TOUCH',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.6,
-                                color: Color(0xFF00A859),
+                              Text(
+                                'TOUCH',
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.6,
+                                  color: Color(0xFF00A859),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 6),
                         AnimatedSwitcher(
@@ -286,12 +289,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 }
                               },
                               child: Container(
-                                height: 50,
-                                padding: const EdgeInsets.all(4),
+                                height: 58,
+                                padding: const EdgeInsets.all(5),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9).withValues(alpha: 0.8),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: const Color(0xFFE2E8F0).withValues(alpha: 0.6)),
+                                  color: const Color(0xFFF1F5F9).withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
                                 ),
                                 child: Row(
                                   children: [
@@ -674,37 +677,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: isSelected
               ? const [
                   BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
+                    color: Color(0x18000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
                   ),
                 ]
               : null,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected ? const Color(0xFF00A859) : const Color(0xFF64748B),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected ? const Color(0xFF00A859) : const Color(0xFF64748B),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected
+                        ? const Color(0xFF00A859)
+                        : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14.5,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected
-                    ? const Color(0xFF00A859)
-                    : const Color(0xFF64748B),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
