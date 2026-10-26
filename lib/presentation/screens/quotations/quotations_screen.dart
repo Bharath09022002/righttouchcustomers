@@ -434,8 +434,10 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                       const SizedBox(height: 10),
                       FilledButton.icon(
                         onPressed: () async {
+                          showLoading(context, message: 'Preparing payment...');
                           try {
                             await ref.read(paymentRepoProvider).createOrder(b.id);
+                            await hideLoading();
                             ref.invalidate(productBookingsProvider);
                             ref.invalidate(paymentListProvider);
                             if (mounted) {
@@ -446,6 +448,7 @@ class _QuotationsScreenState extends ConsumerState<QuotationsScreen> with Single
                               );
                             }
                           } catch (e) {
+                            await hideLoading();
                             if (mounted) {
                               showError(context, title: 'Payment Failed', message: mapException(e).userMessage);
                             }

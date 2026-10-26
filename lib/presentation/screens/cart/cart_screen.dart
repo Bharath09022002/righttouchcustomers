@@ -269,6 +269,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           }
 
           final itemTotal = items.fold<num>(0, (sum, it) => sum + (it.price ?? 0) * it.qty);
+          final baseAmount = double.parse((itemTotal / 1.18).toStringAsFixed(2));
+          final gstAmount = double.parse((itemTotal - baseAmount).toStringAsFixed(2));
           final grandTotal = itemTotal + selectedTip;
 
           return Column(
@@ -316,7 +318,31 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                 ),
                               ),
                               Text(
-                                '₹${itemTotal.toInt()}',
+                                '₹${baseAmount % 1 == 0 ? baseAmount.toInt() : baseAmount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'GST (18%)',
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    color: Color(0xFF64748B),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '₹${gstAmount % 1 == 0 ? gstAmount.toInt() : gstAmount.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
@@ -371,7 +397,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                               FittedBox(
                                 fit: BoxFit.scaleDown,
                                 child: Text(
-                                  '₹${grandTotal.toInt()}',
+                                  '₹${grandTotal % 1 == 0 ? grandTotal.toInt() : grandTotal.toStringAsFixed(2)}',
                                   style: const TextStyle(
                                     fontSize: 17,
                                     fontWeight: FontWeight.w900,
@@ -505,7 +531,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                '₹${grandTotal.toInt()}',
+                                '₹${grandTotal % 1 == 0 ? grandTotal.toInt() : grandTotal.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,

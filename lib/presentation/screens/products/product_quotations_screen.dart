@@ -261,10 +261,12 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
       showError(context, title: 'Already Paid', message: 'This product order is already marked as paid.');
       return;
     }
+    showLoading(context, message: 'Preparing payment...');
     try {
       final repo = ref.read(paymentRepoProvider);
       final res = await repo.createOrder(b.id);
       if (res.free) {
+        await hideLoading();
         ref.invalidate(productBookingsProvider);
         ref.invalidate(paymentListProvider);
         if (mounted) {
@@ -277,6 +279,7 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
         return;
       }
 
+      await hideLoading();
       // Open Razorpay Checkout Screen
       RazorpayService.instance.initialize(repo);
       final user = ref.read(authProvider).user;
@@ -302,6 +305,7 @@ class _ProductQuotationsScreenState extends ConsumerState<ProductQuotationsScree
         );
       }
     } catch (e) {
+      await hideLoading();
       if (mounted) {
         final appErr = mapException(e);
         showError(context, title: 'Payment Failed', message: appErr.userMessage);

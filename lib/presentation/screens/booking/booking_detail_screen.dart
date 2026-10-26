@@ -219,10 +219,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }
 
     setState(() => _busy = true);
+    showLoading(context, message: 'Preparing payment...');
     try {
       final repo = ref.read(paymentRepoProvider);
       final res = await repo.createOrder(b.id);
       if (res.free) {
+        await hideLoading();
         if (mounted) {
           showSuccess(
             context,
@@ -235,6 +237,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         return;
       }
 
+      await hideLoading();
       // Open Razorpay Native Checkout
       RazorpayService.instance.initialize(repo);
       final user = ref.read(authProvider).user;
@@ -260,6 +263,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         );
       }
     } catch (e) {
+      await hideLoading();
       if (mounted) {
         final appErr = mapException(e);
         showError(context, title: 'Payment Failed', message: appErr.userMessage);

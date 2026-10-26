@@ -245,6 +245,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       body: cart.when(
         data: (items) {
           final itemTotal = items.fold<num>(0, (sum, it) => sum + (it.price ?? 0) * it.qty);
+          final baseAmount = double.parse((itemTotal / 1.18).toStringAsFixed(2));
+          final gstAmount = double.parse((itemTotal - baseAmount).toStringAsFixed(2));
           final grandTotal = itemTotal + selectedTip;
 
           return Column(
@@ -765,7 +767,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 ),
                               ),
                               Text(
-                                '₹${itemTotal.toInt()}',
+                                '₹${baseAmount % 1 == 0 ? baseAmount.toInt() : baseAmount.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
@@ -777,9 +779,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: const [
-                              Text(
-                                'Taxes & Service Fee',
+                            children: [
+                              const Text(
+                                'GST (18%)',
                                 style: TextStyle(
                                   fontSize: 14.5,
                                   color: Color(0xFF64748B),
@@ -787,8 +789,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 ),
                               ),
                               Text(
-                                '₹0',
-                                style: TextStyle(
+                                '₹${gstAmount % 1 == 0 ? gstAmount.toInt() : gstAmount.toStringAsFixed(2)}',
+                                style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF0F172A),
@@ -836,7 +838,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 ),
                               ),
                               Text(
-                                '₹${grandTotal.toInt()}',
+                                '₹${grandTotal % 1 == 0 ? grandTotal.toInt() : grandTotal.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w900,
@@ -977,7 +979,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                '₹${grandTotal.toInt()}',
+                                '₹${grandTotal % 1 == 0 ? grandTotal.toInt() : grandTotal.toStringAsFixed(2)}',
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,

@@ -274,10 +274,12 @@ class PaymentsScreen extends ConsumerWidget {
                                 const SizedBox(height: 6),
                                 InkWell(
                                   onTap: () async {
+                                    showLoading(context, message: 'Preparing payment...');
                                     try {
                                       final repo = ref.read(paymentRepoProvider);
                                       final res = await repo.createOrder(x.bookingId);
                                       if (res.free) {
+                                        await hideLoading();
                                         if (context.mounted) {
                                           showSuccess(
                                             context,
@@ -290,6 +292,7 @@ class PaymentsScreen extends ConsumerWidget {
                                         return;
                                       }
 
+                                      await hideLoading();
                                       // Initialize and open native Razorpay Checkout
                                       RazorpayService.instance.initialize(repo);
                                       final user = ref.read(authProvider).user;
@@ -323,6 +326,7 @@ class PaymentsScreen extends ConsumerWidget {
                                         );
                                       }
                                     } catch (e) {
+                                      await hideLoading();
                                       if (context.mounted) {
                                         final appErr = mapException(e);
                                         showError(
